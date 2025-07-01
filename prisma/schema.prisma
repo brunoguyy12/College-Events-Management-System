@@ -1,0 +1,167 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String
+  role      UserRole @default(STUDENT)
+  avatar    String?
+  bio       String?
+  skills    String[] // For participant matching
+  interests String[] // For participant matching
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  organizedEvents Event[]       @relation("EventOrganizer")
+  registrations   Registration[]
+  feedback        Feedback[]
+  notifications   Notification[]
+
+  @@map("users")
+}
+
+model Event {
+  id          String      @id @default(cuid())
+  title       String
+  description String
+  category    EventCategory
+  venue       String
+  startDate   DateTime
+  endDate     DateTime
+  capacity    Int
+  price       Float       @default(0)
+  status      EventStatus @default(DRAFT)
+  imageUrl    String?
+  tags        String[]
+  
+  // AI-generated fields
+  aiScore     Float?      // AI scheduling score
+  aiSuggestions String?   // AI suggestions for improvement
+  
+  organizerId String
+  organizer   User        @relation("EventOrganizer", fields: [organizerId], references: [id])
+  
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  // Relations
+  registrations Registration[]
+  feedback      Feedback[]
+  analytics     EventAnalytics?
+
+  @@map("events")
+}
+
+model Registration {
+  id        String             @id @default(cuid())
+  status    RegistrationStatus @default(PENDING)
+  qrCode    String             @unique
+  checkedIn Boolean            @default(false)
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
+
+  userId  String
+  user    User   @relation(fields: [userId], references: [id])
+  eventId String
+  event   Event  @relation(fields: [eventId], references: [id])
+
+  @@unique([userId, eventId])
+  @@map("registrations")
+}
+
+model Feedback {
+  id        String   @id @default(cuid())
+  rating    Int      // 1-5 stars
+  comment   String?
+  sentiment String?  // AI-analyzed sentiment: POSITIVE, NEGATIVE, NEUTRAL
+  topics    String[] // AI-extracted topics
+  createdAt DateTime @default(now())
+
+  userId  String
+  user    User   @relation(fields: [userId], references: [id])
+  eventId String
+  event   Event  @relation(fields: [eventId], references: [id])
+
+  @@unique([userId, eventId])
+  @@map("feedback")
+}
+
+model EventAnalytics {
+  id              String   @id @default(cuid())
+  totalViews      Int      @default(0)
+  totalRegistrations Int   @default(0)
+  totalAttendees  Int      @default(0)
+  averageRating   Float?
+  sentimentScore  Float?   // AI-calculated sentiment score
+  engagementScore Float?   // AI-calculated engagement score
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  eventId String @unique
+  event   Event  @relation(fields: [eventId], references: [id])
+
+  @@map("event_analytics")
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  title     String
+  message   String
+  type      NotificationType
+  read      Boolean          @default(false)
+  createdAt DateTime         @default(now())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  @@map("notifications")
+}
+
+enum UserRole {
+  STUDENT
+  ORGANIZER
+  ADMIN
+}
+
+enum EventCategory {
+  SEMINAR
+  WORKSHOP
+  HACKATHON
+  FEST
+  CONFERENCE
+  SPORTS
+  CULTURAL
+  ACADEMIC
+  OTHER
+}
+
+enum EventStatus {
+  DRAFT
+  PUBLISHED
+  ONGOING
+  COMPLETED
+  CANCELLED
+}
+
+enum RegistrationStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  WAITLISTED
+}
+
+enum NotificationType {
+  EVENT_REMINDER
+  REGISTRATION_CONFIRMED
+  EVENT_UPDATE
+  FEEDBACK_REQUEST
+  SYSTEM_ALERT
+}
