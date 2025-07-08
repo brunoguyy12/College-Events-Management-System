@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { auth } from "@clerk/nextjs/server";
+import { getAuthUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { EventDetails } from "@/components/event-details";
 import { EventRegistration } from "@/components/event-registration";
@@ -16,6 +17,7 @@ interface EventPageProps {
 
 export default async function EventPage({ params }: EventPageProps) {
   const { userId } = await auth();
+  const user = await getAuthUser();
   const { id: eventID } = await params;
 
   const event = await db.event.findUnique({
@@ -71,9 +73,15 @@ export default async function EventPage({ params }: EventPageProps) {
           <EventDetails event={event} />
         </div>
         <div>
+          {/* <EventRegistration
+            event={event}
+            userId={userId}
+            isRegistered={!!isRegistered}
+          /> */}
           <EventRegistration
             event={event}
             userId={userId}
+            userRole={user?.role || "STUDENT"}
             isRegistered={!!isRegistered}
           />
         </div>

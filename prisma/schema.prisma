@@ -8,54 +8,66 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  name      String
-  role      UserRole @default(STUDENT)
-  avatar    String?
-  bio       String?
-  skills    String[] // For participant matching
-  interests String[] // For participant matching
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Relations
-  organizedEvents Event[]       @relation("EventOrganizer")
-  registrations   Registration[]
+  id              String         @id @default(cuid())
+  email           String         @unique
+  name            String
+  role            UserRole       @default(STUDENT)
+  avatar          String?
+  bio             String?
+  skills          String[]
+  interests       String[]
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  organizedEvents Event[]        @relation("EventOrganizer")
   feedback        Feedback[]
   notifications   Notification[]
+  registrations   Registration[]
+
+  roleRequests      RoleRequest[] @relation("UserRoleRequests")
+  processedRequests RoleRequest[] @relation("AdminProcessedRequests")
 
   @@map("users")
 }
 
-model Event {
-  id          String      @id @default(cuid())
-  title       String
-  description String
-  category    EventCategory
-  venue       String
-  startDate   DateTime
-  endDate     DateTime
-  capacity    Int
-  price       Float       @default(0)
-  status      EventStatus @default(DRAFT)
-  imageUrl    String?
-  tags        String[]
-  
-  // AI-generated fields
-  aiScore     Float?      // AI scheduling score
-  aiSuggestions String?   // AI suggestions for improvement
-  
-  organizerId String
-  organizer   User        @relation("EventOrganizer", fields: [organizerId], references: [id])
-  
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
+model RoleRequest {
+  id            String            @id @default(cuid())
+  requestedRole UserRole
+  reason        String
+  status        RoleRequestStatus @default(PENDING)
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+  processedAt   DateTime?
 
-  // Relations
-  registrations Registration[]
-  feedback      Feedback[]
+  userId      String
+  user        User    @relation("UserRoleRequests", fields: [userId], references: [id])
+  processedBy String?
+  processor   User?   @relation("AdminProcessedRequests", fields: [processedBy], references: [id])
+
+  @@map("role_requests")
+}
+
+model Event {
+  id            String          @id @default(cuid())
+  title         String
+  description   String
+  category      EventCategory
+  venue         String
+  startDate     DateTime
+  endDate       DateTime
+  capacity      Int
+  price         Float           @default(0)
+  status        EventStatus     @default(DRAFT)
+  imageUrl      String?
+  tags          String[]
+  aiScore       Float?
+  aiSuggestions String?
+  organizerId   String
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
   analytics     EventAnalytics?
+  organizer     User            @relation("EventOrganizer", fields: [organizerId], references: [id])
+  feedback      Feedback[]
+  registrations Registration[]
 
   @@map("events")
 }
@@ -67,11 +79,10 @@ model Registration {
   checkedIn Boolean            @default(false)
   createdAt DateTime           @default(now())
   updatedAt DateTime           @updatedAt
-
-  userId  String
-  user    User   @relation(fields: [userId], references: [id])
-  eventId String
-  event   Event  @relation(fields: [eventId], references: [id])
+  userId    String
+  eventId   String
+  event     Event              @relation(fields: [eventId], references: [id])
+  user      User               @relation(fields: [userId], references: [id])
 
   @@unique([userId, eventId])
   @@map("registrations")
@@ -79,34 +90,32 @@ model Registration {
 
 model Feedback {
   id        String   @id @default(cuid())
-  rating    Int      // 1-5 stars
+  rating    Int
   comment   String?
-  sentiment String?  // AI-analyzed sentiment: POSITIVE, NEGATIVE, NEUTRAL
-  topics    String[] // AI-extracted topics
+  sentiment String?
+  topics    String[]
   createdAt DateTime @default(now())
-
-  userId  String
-  user    User   @relation(fields: [userId], references: [id])
-  eventId String
-  event   Event  @relation(fields: [eventId], references: [id])
+  userId    String
+  eventId   String
+  event     Event    @relation(fields: [eventId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
 
   @@unique([userId, eventId])
   @@map("feedback")
 }
 
 model EventAnalytics {
-  id              String   @id @default(cuid())
-  totalViews      Int      @default(0)
-  totalRegistrations Int   @default(0)
-  totalAttendees  Int      @default(0)
-  averageRating   Float?
-  sentimentScore  Float?   // AI-calculated sentiment score
-  engagementScore Float?   // AI-calculated engagement score
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-
-  eventId String @unique
-  event   Event  @relation(fields: [eventId], references: [id])
+  id                 String   @id @default(cuid())
+  totalViews         Int      @default(0)
+  totalRegistrations Int      @default(0)
+  totalAttendees     Int      @default(0)
+  averageRating      Float?
+  sentimentScore     Float?
+  engagementScore    Float?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  eventId            String   @unique
+  event              Event    @relation(fields: [eventId], references: [id])
 
   @@map("event_analytics")
 }
@@ -118,9 +127,8 @@ model Notification {
   type      NotificationType
   read      Boolean          @default(false)
   createdAt DateTime         @default(now())
-
-  userId String
-  user   User   @relation(fields: [userId], references: [id])
+  userId    String
+  user      User             @relation(fields: [userId], references: [id])
 
   @@map("notifications")
 }
@@ -129,6 +137,12 @@ enum UserRole {
   STUDENT
   ORGANIZER
   ADMIN
+}
+
+enum RoleRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
 }
 
 enum EventCategory {
@@ -164,4 +178,5 @@ enum NotificationType {
   EVENT_UPDATE
   FEEDBACK_REQUEST
   SYSTEM_ALERT
+  ROLE_REQUEST_UPDATE
 }

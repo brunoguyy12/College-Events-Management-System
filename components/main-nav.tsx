@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Calendar, Home, BarChart3, Bell } from "lucide-react";
+import { Calendar, Home, BarChart3, Bell, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useUser } from "@clerk/nextjs";
 
@@ -37,10 +37,26 @@ const navigationItems = [
 export function MainNav() {
   const pathname = usePathname();
   const { user } = useUser();
+  const userRole = (user?.publicMetadata?.role as string) || "STUDENT";
+  const isAdmin = userRole === "ADMIN";
+
+  const allNavigationItems = [
+    ...navigationItems,
+    ...(isAdmin
+      ? [
+          {
+            title: "Admin",
+            href: "/admin",
+            icon: Shield,
+          },
+        ]
+      : []),
+  ];
 
   return (
     <nav className="flex items-center space-x-4 lg:space-x-6">
-      {navigationItems.map((item) => (
+      {/* {navigationItems.map((item) => ( */}
+      {allNavigationItems.map((item) => (
         <Button
           key={item.href}
           variant={pathname.startsWith(item.href) ? "default" : "ghost"}

@@ -1,13 +1,20 @@
+import { notFound, redirect } from "next/navigation";
 import { auth } from "@clerk/nextjs/server";
-import { redirect } from "next/navigation";
 import { getAuthUser } from "@/lib/auth";
-import { CreateEventForm } from "@/components/create-event-form";
+import { db } from "@/lib/db";
+import { EditEventForm } from "@/components/edit-event-form";
 import { BreadcrumbNav } from "@/components/breadcrumb-nav";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 
-export default async function CreateEventPage() {
+interface EditEventPageProps {
+  params: {
+    id: string;
+  };
+}
+
+export default async function EditEventPage({ params }: EditEventPageProps) {
   const { userId } = await auth();
 
   if (!userId) {
@@ -20,45 +27,50 @@ export default async function CreateEventPage() {
     redirect("/sign-in");
   }
 
-  const isOrganizer = user.role === "ORGANIZER" || user.role === "ADMIN";
+  const event = await db.event.findUnique({
+    where: { id: params.id },
+    include: {
+      _count: { select: { registrations: true } },
+    },
+  });
 
-  if (!isOrganizer) {
-    redirect("/dashboard");
+  if (!event) {
+    notFound();
+  }
+
+  // Check if user can edit this event
+  const canEdit = user.role === "ADMIN" || event.organizerId === userId;
+
+  if (!canEdit) {
+    redirect("/events");
   }
 
   const breadcrumbItems = [
     { title: "Dashboard", href: "/dashboard" },
     { title: "Events", href: "/events" },
-    { title: "Create Event" },
+    { title: event.title, href: `/events/${event.id}` },
+    { title: "Edit" },
   ];
 
   return (
-    // <div className="max-w-2xl mx-auto space-y-6">
-    //   <div>
-    //     <h1 className="text-3xl font-bold">Create New Event</h1>
-    //     <p className="text-muted-foreground">
-    //       Use AI-powered suggestions to create the perfect event.
-    //     </p>
-    //   </div>
-
-    //   <CreateEventForm userId={userId} />
-    // </div>
-
-    <div className="space-y-6 px-6">
+    <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div className="space-y-2">
           <BreadcrumbNav items={breadcrumbItems} />
           <div className="flex items-center gap-4">
             <Button variant="outline" size="sm" asChild>
-              <Link href="/events" className="flex items-center gap-2">
+              <Link
+                href={`/events/${event.id}`}
+                className="flex items-center gap-2"
+              >
                 <ArrowLeft className="h-4 w-4" />
-                Back to Events
+                Back to Event
               </Link>
             </Button>
             <div>
-              <h1 className="text-3xl font-bold">Create New Event</h1>
+              <h1 className="text-3xl font-bold">Edit Event</h1>
               <p className="text-muted-foreground">
-                Use AI-powered suggestions to create the perfect event.
+                Update your event details and settings.
               </p>
             </div>
           </div>
@@ -66,7 +78,7 @@ export default async function CreateEventPage() {
       </div>
 
       <div className="max-w-2xl">
-        <CreateEventForm userId={userId} />
+        <EditEventForm event={event} userId={userId} />
       </div>
     </div>
   );

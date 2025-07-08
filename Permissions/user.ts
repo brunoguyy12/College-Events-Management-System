@@ -1,4 +1,5 @@
 import { db } from "@/lib/db";
+import { UserRole } from "@prisma/client";
 
 export async function getUserRole(userId: string) {
   // Fetch user role from the database
@@ -10,7 +11,9 @@ export async function getUserRole(userId: string) {
   });
 
   if (!user) {
-    throw new Error("User not found");
+    return {
+      role: UserRole.STUDENT, // Default role if user not found
+    };
   }
 
   return {

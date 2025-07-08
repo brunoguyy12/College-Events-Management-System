@@ -6,6 +6,7 @@ import {
   Settings,
   Plus,
   Bell,
+  Shield,
 } from "lucide-react";
 import { useUser, SignOutButton } from "@clerk/nextjs";
 import Link from "next/link";
@@ -39,9 +40,9 @@ const navigationItems = [
     icon: Calendar,
   },
   {
-    title: "Participants",
-    url: "/participants",
-    icon: Users,
+    title: "Calendar",
+    url: "/calendar",
+    icon: Calendar,
   },
   {
     title: "Analytics",
@@ -63,10 +64,49 @@ const organizerItems = [
   },
   {
     title: "My Events",
-    url: "/events/my-events",
+    url: "/my-events",
     icon: Calendar,
   },
 ];
+
+// const adminItems = [
+//   {
+//     title: "Admin Dashboard",
+//     href: "/admin",
+//     icon: Shield,
+//   },
+// ];
+
+const adminItems = [
+  {
+    title: "Admin Panel",
+    url: "/admin",
+    icon: Shield,
+  },
+  {
+    title: "User Management",
+    url: "/admin/users",
+    icon: Users,
+  },
+  {
+    title: "System Settings",
+    url: "/admin/settings",
+    icon: Settings,
+  },
+];
+
+// const adminItems = [
+//   {
+//     title: "User Management",
+//     url: "/admin/users",
+//     icon: Users,
+//   },
+//   {
+//     title: "System Settings",
+//     url: "/admin/settings",
+//     icon: Settings,
+//   },
+// ];
 
 export async function AppSidebar() {
   // const { user } = useUser()
@@ -82,6 +122,7 @@ export async function AppSidebar() {
 
   const userRole = (await getUserRole(userId)).role;
   const isOrganizer = userRole === "ORGANIZER" || userRole === "ADMIN";
+  const isAdmin = userRole === "ADMIN";
 
   return (
     <Sidebar>
@@ -136,6 +177,26 @@ export async function AppSidebar() {
           </SidebarGroup>
         )}
 
+        {isAdmin && (
+          <SidebarGroup>
+            <SidebarGroupLabel>Admin Tools</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {adminItems.map((item) => (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton asChild>
+                      <Link href={item.url}>
+                        <item.icon className="h-4 w-4" />
+                        <span>{item.title}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
+
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
@@ -170,7 +231,11 @@ export async function AppSidebar() {
               </div>
             </div>
             <SignOutButton>
-              <Button variant="outline" size="sm" className="w-full">
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full bg-transparent"
+              >
                 Sign Out
               </Button>
             </SignOutButton>

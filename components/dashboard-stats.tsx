@@ -1,14 +1,24 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Calendar, Users, TrendingUp, Star } from "lucide-react"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Calendar, Users, TrendingUp, Star } from "lucide-react";
 
 interface DashboardStatsProps {
-  totalEvents: number
-  myRegistrations: number
-  userRole: string
+  totalEvents: number;
+  myRegistrations?: number;
+  myEventsCount?: number;
+  totalParticipants?: number;
+  userRole: string;
 }
 
-export function DashboardStats({ totalEvents, myRegistrations, userRole }: DashboardStatsProps) {
-  const stats = [
+export function DashboardStats({
+  totalEvents,
+  myRegistrations = 0,
+  myEventsCount = 0,
+  totalParticipants = 0,
+  userRole,
+}: DashboardStatsProps) {
+  const isOrganizer = userRole === "ORGANIZER" || userRole === "ADMIN";
+
+  const studentStats = [
     {
       title: "Total Events",
       value: totalEvents,
@@ -33,7 +43,36 @@ export function DashboardStats({ totalEvents, myRegistrations, userRole }: Dashb
       icon: Star,
       description: "Event satisfaction score",
     },
-  ]
+  ];
+
+  const organizerStats = [
+    {
+      title: "Platform Events",
+      value: totalEvents,
+      icon: Calendar,
+      description: "Total events on platform",
+    },
+    {
+      title: "My Events",
+      value: myEventsCount,
+      icon: Calendar,
+      description: "Events you've organized",
+    },
+    {
+      title: "Total Participants",
+      value: totalParticipants,
+      icon: Users,
+      description: "Across all your events",
+    },
+    {
+      title: "Success Rate",
+      value: "92%",
+      icon: TrendingUp,
+      description: "Event completion rate",
+    },
+  ];
+
+  const stats = isOrganizer ? organizerStats : studentStats;
 
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -50,5 +89,5 @@ export function DashboardStats({ totalEvents, myRegistrations, userRole }: Dashb
         </Card>
       ))}
     </div>
-  )
+  );
 }
