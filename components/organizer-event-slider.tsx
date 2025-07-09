@@ -137,7 +137,7 @@ export function OrganizerEventSlider({ events }: OrganizerEventSliderProps) {
             className="w-full bg-transparent"
             asChild
           >
-            <Link href="/events/my-events">View All My Events</Link>
+            <Link href="/my-events">View All My Events</Link>
           </Button>
         </div>
       </CardContent>
