@@ -7,6 +7,7 @@ import {
   Plus,
   Bell,
   Shield,
+  User
 } from "lucide-react";
 import { useUser, SignOutButton } from "@clerk/nextjs";
 import Link from "next/link";
@@ -33,6 +34,11 @@ const navigationItems = [
     title: "Dashboard",
     url: "/dashboard",
     icon: Home,
+  }, 
+  {
+    title: "Profile",
+    url: "/profile",
+    icon: User,
   },
   {
     title: "Events",

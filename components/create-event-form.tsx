@@ -115,7 +115,7 @@ export function CreateEventForm({ userId }: CreateEventFormProps) {
           title: "Success",
           description: "Event created successfully!",
         })
-        router.push("/events/my-events")
+        router.push("/my-events")
       } else {
         throw new Error("Failed to create event")
       }
