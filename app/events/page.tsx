@@ -18,6 +18,9 @@ export default async function EventsPage({ searchParams }: EventsPageProps) {
   const events = await db.event.findMany({
     where: {
       status: "PUBLISHED",
+      endDate: {
+        gte: new Date(), // Only show events that haven't ended yet
+      },
       ...(awaitedCategory && { category: awaitedCategory }),
       ...(awaitedSearch && {
         OR: [

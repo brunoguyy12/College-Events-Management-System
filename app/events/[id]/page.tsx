@@ -8,6 +8,7 @@ import { BreadcrumbNav } from "@/components/breadcrumb-nav";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
+import { EventCompletion } from "@/components/event-completion";
 
 interface EventPageProps {
   params: {
@@ -46,15 +47,14 @@ export default async function EventPage({ params }: EventPageProps) {
     { title: event.title },
   ];
 
+  const checkedInCount = await db.registration.count({
+    where: {
+      eventId: params.id,
+      checkedIn: true,
+    },
+  });
+
   return (
-    // <div className="max-w-4xl mx-auto space-y-8">
-    //   <EventDetails event={event} />
-    //   <EventRegistration
-    //     event={event}
-    //     userId={userId}
-    //     isRegistered={!!isRegistered}
-    //   />
-    // </div>
     <div className="space-y-6 px-6">
       <div className="flex items-center justify-between">
         <div className="space-y-2">
@@ -84,6 +84,18 @@ export default async function EventPage({ params }: EventPageProps) {
             userRole={user?.role || "STUDENT"}
             isRegistered={!!isRegistered}
           />
+
+          {(user?.role === "ORGANIZER" || user?.role === "ADMIN") && (
+            <div className="mt-6">
+              <EventCompletion
+                event={event}
+                checkedInCount={checkedInCount}
+                isEventOwner={
+                  userId === event.organizerId || user?.role === "ADMIN"
+                }
+              />
+            </div>
+          )}
         </div>
       </div>
     </div>
