@@ -9,6 +9,7 @@ export async function POST(
 ) {
   try {
     const { userId } = await auth();
+    const { id } = await params;
 
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -21,7 +22,7 @@ export async function POST(
     }
 
     const event = await db.event.findUnique({
-      where: { id: params.id },
+      where: { id: id },
       include: {
         registrations: {
           include: { user: true },
@@ -51,7 +52,7 @@ export async function POST(
 
     // Update event status to completed
     const updatedEvent = await db.event.update({
-      where: { id: params.id },
+      where: { id: id },
       data: { status: "COMPLETED" },
     });
 
@@ -62,14 +63,14 @@ export async function POST(
     const totalRegistrations = event._count.registrations;
 
     await db.eventAnalytics.upsert({
-      where: { eventId: params.id },
+      where: { eventId: id },
       update: {
         totalRegistrations,
         totalAttendees: checkedInCount,
         updatedAt: new Date(),
       },
       create: {
-        eventId: params.id,
+        eventId: id,
         totalRegistrations,
         totalAttendees: checkedInCount,
       },

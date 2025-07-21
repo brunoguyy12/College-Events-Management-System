@@ -24,6 +24,7 @@ interface EventRegistrationProps {
     capacity: number;
     price: number;
     startDate: Date;
+    endDate: Date;
     organizerId: string;
     _count: {
       registrations: number;
@@ -48,7 +49,8 @@ export function EventRegistration({
     (event._count.registrations / event.capacity) * 100;
   const spotsLeft = event.capacity - event._count.registrations;
   const isEventFull = spotsLeft <= 0;
-  const isEventPast = new Date(event.startDate) < new Date();
+  const isEventPast = new Date(event.endDate) < new Date();
+  const isEventRegistrationOver = new Date(event.startDate) < new Date();
   const isOrganizer = userRole === "ORGANIZER" || userRole === "ADMIN";
   const isEventOwner = userId === event.organizerId;
 
@@ -215,6 +217,15 @@ export function EventRegistration({
         variant: "destructive" as const,
       };
     }
+
+    if (isEventRegistrationOver) {
+      return {
+        status: "registration_over",
+        icon: Clock,
+        message: "Registration Deadline Passed",
+        variant: "secondary" as const,
+      };
+    }
     return {
       status: "available",
       icon: Users,
@@ -277,6 +288,11 @@ export function EventRegistration({
               <CheckCircle className="h-4 w-4 mr-2" />
               Already Registered
             </Button>
+          ) : isEventRegistrationOver ? (
+            <Button disabled className="w-full" size="lg">
+              <Clock className="h-4 w-4 mr-2" />
+              Registration Closed
+            </Button>
           ) : isEventPast ? (
             <Button disabled className="w-full" size="lg">
               <Clock className="h-4 w-4 mr-2" />
@@ -297,17 +313,20 @@ export function EventRegistration({
               {isLoading
                 ? "Registering..."
                 : event.price === 0
-                ? "Register for Free"
-                : `Register for ₹${event.price}`}
+                  ? "Register for Free"
+                  : `Register for ₹${event.price}`}
             </Button>
           )}
 
-          {!isRegistered && !isEventPast && !isEventFull && (
-            <p className="text-xs text-center text-muted-foreground">
-              By registering, you agree to attend the event and follow the
-              guidelines.
-            </p>
-          )}
+          {!isRegistered &&
+            !isEventPast &&
+            !isEventFull &&
+            !isEventRegistrationOver && (
+              <p className="text-xs text-center text-muted-foreground">
+                By registering, you agree to attend the event and follow the
+                guidelines.
+              </p>
+            )}
         </div>
       </CardContent>
     </Card>

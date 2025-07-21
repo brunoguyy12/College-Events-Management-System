@@ -32,6 +32,8 @@ export default async function EventParticipantsPage({
 }: EventParticipantsPageProps) {
   const { userId } = await auth();
 
+  const { id } = await params;
+
   if (!userId) {
     redirect("/sign-in");
   }
@@ -49,7 +51,7 @@ export default async function EventParticipantsPage({
   }
 
   const event = await db.event.findUnique({
-    where: { id: params.id },
+    where: { id: id },
     include: {
       organizer: true,
       registrations: {

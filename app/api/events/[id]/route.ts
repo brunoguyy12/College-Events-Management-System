@@ -9,6 +9,7 @@ export async function PATCH(
 ) {
   try {
     const { userId } = await auth();
+    const { id } = await params;
 
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -21,7 +22,7 @@ export async function PATCH(
     }
 
     const event = await db.event.findUnique({
-      where: { id: params.id },
+      where: { id: id },
     });
 
     if (!event) {
@@ -38,7 +39,7 @@ export async function PATCH(
     const data = await request.json();
 
     const updatedEvent = await db.event.update({
-      where: { id: params.id },
+      where: { id: id },
       data: {
         title: data.title,
         description: data.description,

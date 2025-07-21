@@ -16,6 +16,7 @@ interface EditEventPageProps {
 
 export default async function EditEventPage({ params }: EditEventPageProps) {
   const { userId } = await auth();
+  const { id } = await params;
 
   if (!userId) {
     redirect("/sign-in");
@@ -28,7 +29,7 @@ export default async function EditEventPage({ params }: EditEventPageProps) {
   }
 
   const event = await db.event.findUnique({
-    where: { id: params.id },
+    where: { id: id },
     include: {
       _count: { select: { registrations: true } },
     },

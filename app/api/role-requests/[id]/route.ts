@@ -8,6 +8,7 @@ export async function PATCH(
 ) {
   try {
     const { userId } = await auth();
+    const { id } = await params;
 
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -25,7 +26,7 @@ export async function PATCH(
     const { action, adminNote } = await request.json();
 
     const roleRequest = await db.roleRequest.findUnique({
-      where: { id: params.id },
+      where: { id: id },
       include: { user: true },
     });
 
@@ -45,7 +46,7 @@ export async function PATCH(
 
     // Update the role request
     const updatedRequest = await db.roleRequest.update({
-      where: { id: params.id },
+      where: { id: id },
       data: {
         status: action === "approve" ? "APPROVED" : "REJECTED",
         processedBy: userId,

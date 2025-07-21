@@ -49,7 +49,7 @@ export default async function EventPage({ params }: EventPageProps) {
 
   const checkedInCount = await db.registration.count({
     where: {
-      eventId: params.id,
+      eventId: eventID,
       checkedIn: true,
     },
   });

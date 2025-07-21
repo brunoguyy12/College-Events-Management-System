@@ -10,6 +10,8 @@ export async function POST(
   try {
     const { userId } = await auth();
 
+    const { id } = await params;
+
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -33,7 +35,7 @@ export async function POST(
     const registration = await db.registration.findFirst({
       where: {
         qrCode,
-        eventId: params.id,
+        eventId: id,
       },
       include: {
         user: true,

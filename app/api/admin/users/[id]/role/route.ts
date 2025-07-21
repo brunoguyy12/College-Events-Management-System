@@ -9,6 +9,8 @@ export async function PATCH(
   try {
     const { userId } = await auth();
 
+    const { id } = await params;
+
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -26,13 +28,13 @@ export async function PATCH(
 
     // Update in database
     await db.user.update({
-      where: { id: params.id },
+      where: { id: id },
       data: { role },
     });
 
     // Update in Clerk
     const clerk = await clerkClient();
-    await clerk.users.updateUserMetadata(params.id, {
+    await clerk.users.updateUserMetadata(id, {
       publicMetadata: { role },
     });
 

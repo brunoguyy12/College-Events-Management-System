@@ -17,13 +17,14 @@ interface CheckInPageProps {
 export default async function CheckInPage({ params }: CheckInPageProps) {
   const { userId } = await auth();
   const user = await getAuthUser();
+  const { id } = await params;
 
   if (!user || (user.role !== "ORGANIZER" && user.role !== "ADMIN")) {
     return <div>Access denied. Only organizers can access this page.</div>;
   }
 
   const event = await db.event.findUnique({
-    where: { id: params.id },
+    where: { id: id },
     include: {
       organizer: true,
       _count: { select: { registrations: true } },
