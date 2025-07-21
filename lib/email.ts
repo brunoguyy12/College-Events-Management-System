@@ -1,5 +1,6 @@
 import { Resend } from "resend";
 import QRCode from "qrcode";
+import { uploadToImageKit } from "./imagekit"
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -11,29 +12,29 @@ interface RegistrationEmailData {
   eventVenue: string;
   qrCode: string;
   registrationId: string;
+  eventId: string
 }
 
 export async function sendRegistrationConfirmationEmail(
   data: RegistrationEmailData
 ) {
   try {
-    // Generate QR code as data URL
-    const qrCodeDataUrl = await QRCode.toDataURL(
-      JSON.stringify({
-        registrationId: data.registrationId,
-        qrCode: data.qrCode,
-        eventTitle: data.eventTitle,
-        userName: data.userName,
-      }),
-      {
-        width: 200,
-        margin: 2,
-        color: {
-          dark: "#000000",
-          light: "#FFFFFF",
-        },
-      }
-    );
+
+    // Create check-in URL for QR code
+    const checkInUrl = `${process.env.NEXT_PUBLIC_SITE_URL}/events/${data.eventId}/check-in?verify=${data.qrCode}`
+    
+    // Generate QR code as buffer
+    const qrBuffer = await QRCode.toBuffer(checkInUrl, {
+      width: 300,
+      margin: 2,
+      color: {
+        dark: "#000000",
+        light: "#FFFFFF",
+      },
+      });
+
+      // Upload QR code to ImageKit
+    const qrImageResult = await uploadToImageKit(qrBuffer, `qr-${data.registrationId}.png`, `qr-codes/${data.eventId}/`)
 
     const { data: emailData, error } = await resend.emails.send({
       // from: "College Events <noreply@collegeevents.com>",
@@ -58,6 +59,7 @@ export async function sendRegistrationConfirmationEmail(
               .detail-label { font-weight: bold; color: #667eea; }
               .footer { text-align: center; margin-top: 30px; padding: 20px; color: #666; font-size: 14px; }
               .button { display: inline-block; background: #667eea; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; margin: 10px 0; }
+              .qr-image { max-width: 250px; height: auto; border: 1px solid #ddd; border-radius: 8px; }
             </style>
           </head>
           <body>
@@ -94,9 +96,12 @@ export async function sendRegistrationConfirmationEmail(
                 <div class="qr-section">
                   <h3>📱 Your Entry QR Code</h3>
                   <p>Show this QR code at the event entrance for quick check-in:</p>
-                  <img src="${qrCodeDataUrl}" alt="QR Code" style="max-width: 200px; height: auto;" />
+                  <img src="${qrImageResult.url}" alt="QR Code for Event Check-in" class="qr-image" />
                   <p><strong>Registration Code: ${data.qrCode}</strong></p>
                   <p style="font-size: 12px; color: #666;">Save this email or take a screenshot of the QR code</p>
+                  <p style="font-size: 12px; color: #666;">
+                    <a href="${checkInUrl}" style="color: #667eea;">Click here if QR scanning doesn't work</a>
+                  </p>
                 </div>
 
                 <div style="background: #e8f4fd; padding: 20px; border-radius: 10px; margin: 20px 0;">
@@ -131,7 +136,7 @@ export async function sendRegistrationConfirmationEmail(
       throw new Error("Failed to send email");
     }
 
-    return { success: true, data: emailData };
+    return { success: true, data: emailData, qrImageUrl: qrImageResult.url }
   } catch (error) {
     console.error("Error sending registration email:", error);
     throw error;

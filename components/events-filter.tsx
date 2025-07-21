@@ -51,7 +51,7 @@ export function EventsFilter() {
           <Input
             placeholder="Search events..."
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => {setSearch(e.target.value); updateFilters()}}
             className="pl-10"
             onKeyDown={(e) => e.key === "Enter" && updateFilters()}
           />

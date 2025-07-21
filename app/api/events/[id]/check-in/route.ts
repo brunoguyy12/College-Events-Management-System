@@ -12,14 +12,11 @@ export async function POST(
 
     const { id } = await params;
 
-    if (!userId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
 
     const user = await getAuthUser();
 
     if (!user || (user.role !== "ORGANIZER" && user.role !== "ADMIN")) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
     const { qrCode } = await request.json();
@@ -41,7 +38,7 @@ export async function POST(
         user: true,
         event: true,
       },
-    });
+    }); 
 
     if (!registration) {
       return NextResponse.json(
@@ -51,32 +48,50 @@ export async function POST(
     }
 
     // Check if already checked in
-    if (registration.checkedIn) {
-      return NextResponse.json({
-        registration,
-        message: "Already checked in",
-      });
+    // if (registration.checkedIn) {
+    //   return NextResponse.json({
+    //     registration,
+    //     message: "Already checked in",
+    //   });
+    // }
+
+    // Check if user can manage this event
+    const canManage = user.role === "ADMIN" || registration.event.organizerId === userId
+
+    if (!canManage) {
+      return NextResponse.json({ error: "Permission denied" }, { status: 403 })
     }
 
-    // Update check-in status
+
+
+    // Update check-in status if not already checked in
+    if (!registration.checkedIn) {
     const updatedRegistration = await db.registration.update({
       where: { id: registration.id },
       data: { checkedIn: true },
-      include: {
-        user: true,
-        event: true,
-      },
     });
+  }
 
     return NextResponse.json({
-      registration: updatedRegistration,
-      message: "Check-in successful",
+      success: true,
+      registration: {
+        id: registration.id,
+        qrCode: registration.qrCode,
+        checkedIn: true,
+        user: {
+          name: registration.user.name || registration.user.email,
+          email: registration.user.email,
+          avatar: registration.user.avatar,
+        },
+        event: {
+          title: registration.event.title,
+          startDate: registration.event.startDate,
+          venue: registration.event.venue,
+        },
+      },
     });
   } catch (error) {
-    console.error("Error processing check-in:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    console.error("Check-in error:", error)
+    return NextResponse.json({ error: "Check-in failed" }, { status: 500 })
   }
 }

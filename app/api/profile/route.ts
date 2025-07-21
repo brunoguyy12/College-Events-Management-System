@@ -7,8 +7,9 @@ const updateProfileSchema = z.object({
   firstName: z.string().min(1).max(50),
   lastName: z.string().min(1).max(50),
   bio: z.string().max(500).optional(),
-  skills: z.array(z.string().max(200)).optional(),
-  interests: z.array(z.string().max(200)).optional(),
+  skills: z.string().max(200).optional(),
+  interests: z.string().max(200).optional(),
+  avatar: z.string().optional(),
 });
 
 export async function PATCH(request: NextRequest) {
@@ -28,8 +29,9 @@ export async function PATCH(request: NextRequest) {
       data: {
         name: `${validatedData.firstName} ${validatedData.lastName}`,
         bio: validatedData.bio || null,
-        skills: validatedData.skills || [],
-        interests: validatedData.interests || [],
+        skills: validatedData.skills || null,
+        interests: validatedData.interests || null,
+        avatar: validatedData.avatar || null,
       },
     });
 

@@ -13,6 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { ImageUpload } from "@/components/image-upload"
 import {
   Form,
   FormControl,
@@ -35,12 +36,9 @@ const profileSchema = z.object({
     .max(50, "Last name must be less than 50 characters"),
   email: z.string().email("Invalid email address"),
   bio: z.string().max(500, "Bio must be less than 500 characters").optional(),
-  skills: z
-    .array(z.string().max(200, "Skill must be less than 200 characters"))
-    .optional(),
-  interests: z
-    .array(z.string().max(200, "Interests must be less than 200 characters"))
-    .optional(),
+  skills: z.string().max(200, "Skills must be less than 200 characters").optional(),
+  interests: z.string().max(200, "Interests must be less than 200 characters").optional(),
+  avatar: z.string().optional(),
 });
 
 type ProfileFormData = z.infer<typeof profileSchema>;
@@ -60,8 +58,9 @@ interface ProfileFormProps {
     email: string;
     name: string | null;
     bio: string | null;
-    skills: string[] | [];
-    interests: string[] | [];
+    skills: string | null;
+    avatar: string | null;
+    interests: string | null;
     createdAt: Date;
     updatedAt: Date;
   };
@@ -71,6 +70,8 @@ export function ProfileForm({ user, dbUser }: ProfileFormProps) {
   const { user: clerkUser } = useUser();
   const [isEditing, setIsEditing] = useState(!user.firstName || !user.lastName);
   const [isPending, startTransition] = useTransition();
+  const [avatarUrl, setAvatarUrl] = useState(dbUser.avatar || user.avatar || "")
+
 
   const isProfileIncomplete = !user.firstName || !user.lastName;
 
@@ -83,6 +84,7 @@ export function ProfileForm({ user, dbUser }: ProfileFormProps) {
       bio: dbUser.bio || "",
       skills: dbUser.skills || "",
       interests: dbUser.interests || "",
+      avatar: avatarUrl,
     },
   });
 
@@ -95,21 +97,14 @@ export function ProfileForm({ user, dbUser }: ProfileFormProps) {
             firstName: data.firstName,
             lastName: data.lastName,
           });
+
+          // Update Clerk profile image if changed
+            if (avatarUrl && avatarUrl !== user.avatar) {
+              await clerkUser.setProfileImage({ file: avatarUrl })
+            }
         }
 
-        // If Clerk user has an avatar, update it
-        if (clerkUser && clerkUser.imageUrl) {
-          await clerkUser.setProfileImage({ file: null });
-        }
 
-        // Convert the Skills & interests comma separated into arrays
-        const skillsArray = data.skills
-          ? data.skills[0].split(",").map((skill) => skill.trim())
-          : [];
-
-        const interestsArray = data.interests
-          ? data.interests[0].split(",").map((interest) => interest.trim())
-          : [];
 
         // Update database
         const response = await fetch("/api/profile", {
@@ -121,8 +116,9 @@ export function ProfileForm({ user, dbUser }: ProfileFormProps) {
             firstName: data.firstName,
             lastName: data.lastName,
             bio: data.bio,
-            skills: skillsArray,
-            interests: interestsArray,
+            skills: data.skills || null,
+            interests: data.interests || null,
+            avatar: avatarUrl,
           }),
         });
 
@@ -142,12 +138,12 @@ export function ProfileForm({ user, dbUser }: ProfileFormProps) {
     });
   };
 
-  const handleImageUpload = () => {
-    if (clerkUser) {
-      // This will open Clerk's image upload modal
-      clerkUser.setProfileImage({ file: null });
-    }
-  };
+  // const handleImageUpload = () => {
+  //   if (clerkUser) {
+  //     // This will open Clerk's image upload modal
+  //     clerkUser.setProfileImage({ file: null });
+  //   }
+  // };
 
   const bioLength = form.watch("bio")?.length || 0;
   const skillsLength = form.watch("skills")?.length || 0;
@@ -168,6 +164,7 @@ export function ProfileForm({ user, dbUser }: ProfileFormProps) {
               onClick={() => {
                 if (isEditing) {
                   form.reset();
+                  setAvatarUrl(dbUser.avatar || user.avatar || "");
                 }
                 setIsEditing(!isEditing);
               }}
@@ -201,6 +198,17 @@ export function ProfileForm({ user, dbUser }: ProfileFormProps) {
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+
+            {/* Profile Image */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <User className="h-4 w-4 text-muted-foreground" />
+                <h3 className="text-lg font-medium">Profile Image</h3>
+              </div>
+
+              <ImageUpload currentImage={avatarUrl} onImageChange={setAvatarUrl} />
+            </div>
+
             {/* Basic Information */}
             <div className="space-y-4">
               <div className="flex items-center gap-2">
@@ -267,42 +275,6 @@ export function ProfileForm({ user, dbUser }: ProfileFormProps) {
               />
             </div>
 
-            {/* Profile Image */}
-            <div className="space-y-4">
-              <div className="flex items-center gap-2">
-                <Upload className="h-4 w-4 text-muted-foreground" />
-                <h3 className="text-lg font-medium">Profile Image</h3>
-              </div>
-
-              <div className="flex items-center gap-4">
-                <Avatar className="h-20 w-20">
-                  <AvatarImage
-                    src={user.avatar || "/placeholder.svg"}
-                    alt={user.name || "User"}
-                  />
-                  <AvatarFallback className="text-2xl">
-                    {user.firstName
-                      ? user.firstName.charAt(0).toUpperCase()
-                      : user.email.charAt(0).toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="space-y-2">
-                  <p className="text-sm text-muted-foreground">
-                    Upload a profile picture to personalize your account
-                  </p>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={handleImageUpload}
-                    disabled={isPending}
-                  >
-                    <Upload className="h-4 w-4 mr-2" />
-                    Upload Image
-                  </Button>
-                </div>
-              </div>
-            </div>
 
             {/* Additional Information */}
             <div className="space-y-4">
@@ -410,11 +382,14 @@ export function ProfileForm({ user, dbUser }: ProfileFormProps) {
                   <div>
                     <h4 className="text-sm font-medium mb-2">Skills</h4>
                     <div className="flex flex-wrap gap-2">
-                      {dbUser.skills.map((skill, index) => (
-                        <Badge key={index} variant="secondary">
+                      
+                      {dbUser.skills.split(",").map((skill, index) => (
+                        <Badge key={index} variant="outline">
                           {skill.trim()}
                         </Badge>
                       ))}
+
+
                     </div>
                   </div>
                 )}
@@ -423,7 +398,7 @@ export function ProfileForm({ user, dbUser }: ProfileFormProps) {
                   <div>
                     <h4 className="text-sm font-medium mb-2">Interests</h4>
                     <div className="flex flex-wrap gap-2">
-                      {dbUser.interests.map((interest, index) => (
+                      {dbUser.interests.split(",").map((interest, index) => (
                         <Badge key={index} variant="outline">
                           {interest.trim()}
                         </Badge>

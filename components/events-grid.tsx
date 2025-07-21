@@ -42,12 +42,13 @@ export function EventsGrid({ events, itemsPerPage = 9 }: EventsGridProps) {
 
   if (events.length === 0) {
     return (
-      <div className="text-center py-12">
-        <h3 className="text-lg font-semibold">No events found</h3>
-        <p className="text-muted-foreground">
-          Try adjusting your search criteria.
-        </p>
-      </div>
+      // <div className="text-center py-12">
+      //   <h3 className="text-lg font-semibold">No events found</h3>
+      //   <p className="text-muted-foreground">
+      //     Try adjusting your search criteria.
+      //   </p>
+      // </div>
+      <></>
     );
   }
 

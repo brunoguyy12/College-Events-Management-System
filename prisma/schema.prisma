@@ -14,8 +14,8 @@ model User {
   role            UserRole       @default(STUDENT)
   avatar          String?
   bio             String?
-  skills          String[]
-  interests       String[]
+  skills          String?
+  interests       String?
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
   organizedEvents Event[]        @relation("EventOrganizer")
