@@ -63,7 +63,7 @@ export function UserManagement({ users, currentUserId }: UserManagementProps) {
       if (response.ok) {
         toast({
           title: "Role Updated",
-          description: `${selectedUser.name}'s role has been updated to ${newRole}.`,
+          description: `${selectedUser.name ? selectedUser.name : selectedUser.email}'s role has been updated to ${newRole}.`,
         });
         setSelectedUser(null);
         setNewRole("");

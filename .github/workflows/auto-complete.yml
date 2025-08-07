@@ -1,0 +1,16 @@
+name: Auto Complete Events
+
+on:
+  schedule:
+    # Run every hour
+    - cron: '0 * * * *'
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  auto-complete:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Auto Complete Events
+        run: |
+          curl -X POST ${{ secrets.VERCEL_URL }}/api/events/auto-complete \
+            -H "Content-Type: application/json"

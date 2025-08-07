@@ -1,19 +1,24 @@
-import type React from "react"
-import { auth } from "@clerk/nextjs/server"
-import { redirect } from "next/navigation"
-import { AppSidebar } from "@/components/app-sidebar"
-import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar"
-import { Separator } from "@/components/ui/separator"
+import type React from "react";
+import { auth } from "@clerk/nextjs/server";
+import { redirect } from "next/navigation";
+import { AppSidebar } from "@/components/app-sidebar";
+import {
+  SidebarProvider,
+  SidebarInset,
+  SidebarTrigger,
+} from "@/components/ui/sidebar";
+import { Separator } from "@/components/ui/separator";
+import { DashboardClient } from "@/components/dashboard-client";
 
 export default async function DashboardLayout({
   children,
 }: {
-  children: React.ReactNode
+  children: React.ReactNode;
 }) {
-  const { userId } = await auth()
+  const { userId } = await auth();
 
   if (!userId) {
-    redirect("/sign-in")
+    redirect("/sign-in");
   }
 
   return (
@@ -24,8 +29,10 @@ export default async function DashboardLayout({
           <SidebarTrigger className="-ml-1" />
           <Separator orientation="vertical" className="mr-2 h-4" />
         </header>
-        <main className="flex-1 space-y-4 p-4 md:p-8">{children}</main>
+        <main className="flex-1 space-y-4 p-4 md:p-8">
+          <DashboardClient>{children}</DashboardClient>
+        </main>
       </SidebarInset>
     </SidebarProvider>
-  )
+  );
 }

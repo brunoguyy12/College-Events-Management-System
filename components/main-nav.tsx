@@ -2,72 +2,78 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Calendar, Home, BarChart3, Bell, Shield } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import { Calendar, Home, Settings, Shield, BarChart3 } from "lucide-react";
 import { useUser } from "@clerk/nextjs";
 
-const navigationItems = [
-  {
-    title: "Dashboard",
-    href: "/dashboard",
-    icon: Home,
-  },
-  {
-    title: "Events",
-    href: "/events",
-    icon: Calendar,
-  },
-  {
-    title: "Calendar",
-    href: "/calendar",
-    icon: Calendar,
-  },
-  {
-    title: "Analytics",
-    href: "/analytics",
-    icon: BarChart3,
-  },
-  {
-    title: "Notifications",
-    href: "/notifications",
-    icon: Bell,
-  },
-];
+interface MainNavProps {
+  userRole: string;
+}
 
-export function MainNav() {
+export function MainNav({ userRole }: MainNavProps) {
   const pathname = usePathname();
   const { user } = useUser();
-  const userRole = (user?.publicMetadata?.role as string) || "STUDENT";
-  const isAdmin = userRole === "ADMIN";
 
-  const allNavigationItems = [
-    ...navigationItems,
-    ...(isAdmin
-      ? [
-          {
-            title: "Admin",
-            href: "/admin",
-            icon: Shield,
-          },
-        ]
-      : []),
+  const routes = [
+    {
+      href: "/dashboard",
+      label: "Dashboard",
+      icon: Home,
+      active: pathname === "/dashboard",
+    },
+    {
+      href: "/events",
+      label: "Events",
+      icon: Calendar,
+      active: pathname.startsWith("/events"),
+    },
+    {
+      href: "/calendar",
+      label: "Calendar",
+      icon: Calendar,
+      active: pathname === "/calendar",
+    },
+    {
+      href: "/analytics",
+      label: "Analytics",
+      icon: BarChart3,
+      active: pathname === "/analytics",
+    },
   ];
+
+  // Add admin-only routes
+  if (userRole === "ADMIN") {
+    routes.push({
+      href: "/admin",
+      label: "Admin",
+      icon: Shield,
+      active: pathname.startsWith("/admin"),
+    });
+  }
+
+  routes.push({
+    href: "/settings",
+    label: "Settings",
+    icon: Settings,
+    active: pathname === "/settings",
+  });
 
   return (
     <nav className="flex items-center space-x-4 lg:space-x-6">
-      {/* {navigationItems.map((item) => ( */}
-      {allNavigationItems.map((item) => (
-        <Button
-          key={item.href}
-          variant={pathname.startsWith(item.href) ? "default" : "ghost"}
-          size="sm"
-          asChild
+      {routes.map((route) => (
+        <Link
+          key={route.href}
+          href={route.href}
+          className={cn(
+            "flex items-center gap-2 text-sm font-medium transition-colors hover:text-primary",
+            route.active
+              ? "text-black dark:text-white"
+              : "text-muted-foreground"
+          )}
         >
-          <Link href={item.href} className="flex items-center gap-2">
-            <item.icon className="h-4 w-4" />
-            <span className="hidden sm:inline-block">{item.title}</span>
-          </Link>
-        </Button>
+          <route.icon className="h-4 w-4" />
+          {route.label}
+        </Link>
       ))}
     </nav>
   );

@@ -156,35 +156,43 @@
 //   )
 // }
 
-"use client"
+"use client";
 
-import type React from "react"
+import type React from "react";
 
-import { useState, useRef } from "react"
-import { Button } from "@/components/ui/button"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Upload, X, Loader2 } from "lucide-react"
-import { useToast } from "@/hooks/use-toast"
+import { useState, useRef } from "react";
+import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Upload, X, Loader2 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { useUser } from "@clerk/nextjs";
 
 interface ImageUploadProps {
-  currentImage?: string
-  onImageChange: (url: string) => void
-  disabled?: boolean
+  currentImage?: string;
+  onImageChange: (url: string) => void;
+  disabled?: boolean;
 }
 
-export function ImageUpload({ currentImage, onImageChange, disabled }: ImageUploadProps) {
-  const [isUploading, setIsUploading] = useState(false)
-  const fileInputRef = useRef<HTMLInputElement>(null)
-  const { toast } = useToast()
+export function ImageUpload({
+  currentImage,
+  onImageChange,
+  disabled,
+}: ImageUploadProps) {
+  const [isUploading, setIsUploading] = useState(false);
+  const { user: clerkUser } = useUser();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { toast } = useToast();
 
-  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
+  const handleFileSelect = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = event.target.files?.[0];
     if (!file) {
       toast({
         title: "No file provided",
-        variant: "destructive"
-      })
-      return; 
+        variant: "destructive",
+      });
+      return;
     }
 
     // Validate file type
@@ -193,8 +201,8 @@ export function ImageUpload({ currentImage, onImageChange, disabled }: ImageUplo
         title: "Invalid file type",
         description: "Please select an image file.",
         variant: "destructive",
-      })
-      return
+      });
+      return;
     }
 
     // Validate file size (5MB max)
@@ -203,57 +211,75 @@ export function ImageUpload({ currentImage, onImageChange, disabled }: ImageUplo
         title: "File too large",
         description: "Please select an image smaller than 5MB.",
         variant: "destructive",
-      })
-      return
+      });
+      return;
     }
 
-    setIsUploading(true)
+    setIsUploading(true);
 
     try {
-      const formData = new FormData()
-      formData.append("file", file)
-      formData.append("folder", "profile-images")
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("folder", "profile-images");
+
+      if (clerkUser) {
+        const resultImage = await clerkUser.setProfileImage({
+          file: file,
+        });
+
+        if (!resultImage) {
+          toast({
+            title: "Image upload failed",
+            description: "Failed to upload image to Clerk.",
+            variant: "destructive",
+          });
+          return;
+        }
+      }
 
       const response = await fetch("/api/upload", {
         method: "POST",
         body: formData,
-      })
+      });
 
       if (!response.ok) {
-        throw new Error("Upload failed")
+        throw new Error("Upload failed");
       }
 
-      const data = await response.json()
-      onImageChange(data.url)
+      const data = await response.json();
+      onImageChange(data.url);
 
       toast({
         title: "Upload successful",
         description: "Your profile image has been updated.",
-      })
+      });
     } catch (error) {
-      console.error("Upload error:", error)
+      console.error("Upload error:", error);
       toast({
         title: "Upload failed",
         description: "Failed to upload image. Please try again.",
         variant: "destructive",
-      })
+      });
     } finally {
-      setIsUploading(false)
+      setIsUploading(false);
       // Reset file input
       if (fileInputRef.current) {
-        fileInputRef.current.value = ""
+        fileInputRef.current.value = "";
       }
     }
-  }
+  };
 
   const handleRemove = () => {
-    onImageChange("")
-  }
+    onImageChange("");
+  };
 
   return (
     <div className="flex items-center gap-4">
       <Avatar className="h-20 w-20">
-        <AvatarImage src={currentImage || "/placeholder.svg"} className="object-cover" />
+        <AvatarImage
+          src={currentImage || "/placeholder.svg"}
+          className="object-cover"
+        />
         <AvatarFallback>
           <Upload className="h-8 w-8 text-muted-foreground" />
         </AvatarFallback>
@@ -263,6 +289,7 @@ export function ImageUpload({ currentImage, onImageChange, disabled }: ImageUplo
         <input
           ref={fileInputRef}
           type="file"
+          placeholder="Select an image"
           accept="image/*"
           onChange={handleFileSelect}
           className="hidden"
@@ -290,12 +317,18 @@ export function ImageUpload({ currentImage, onImageChange, disabled }: ImageUplo
         </Button>
 
         {currentImage && (
-          <Button type="button" variant="outline" size="sm" onClick={handleRemove} disabled={disabled || isUploading}>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={handleRemove}
+            disabled={disabled || isUploading}
+          >
             <X className="h-4 w-4 mr-2" />
             Remove
           </Button>
         )}
       </div>
     </div>
-  )
+  );
 }

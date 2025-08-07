@@ -73,16 +73,19 @@ model Event {
 }
 
 model Registration {
-  id        String             @id @default(cuid())
-  status    RegistrationStatus @default(PENDING)
-  qrCode    String             @unique
-  checkedIn Boolean            @default(false)
-  createdAt DateTime           @default(now())
-  updatedAt DateTime           @updatedAt
-  userId    String
-  eventId   String
-  event     Event              @relation(fields: [eventId], references: [id])
-  user      User               @relation(fields: [userId], references: [id])
+  id            String             @id @default(cuid())
+  status        RegistrationStatus @default(CONFIRMED)
+  qrCode        String             @unique
+  checkedIn     Boolean            @default(false)
+  checkedInAt   DateTime?
+  feedbackGiven Boolean            @default(false)
+  feedbackShown Boolean            @default(false)
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+  userId        String
+  eventId       String
+  event         Event              @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user          User               @relation(fields: [userId], references: [id])
 
   @@unique([userId, eventId])
   @@map("registrations")
@@ -92,12 +95,13 @@ model Feedback {
   id        String   @id @default(cuid())
   rating    Int
   comment   String?
-  sentiment String?
-  topics    String[]
+  sentiment String? // AI-analyzed sentiment: POSITIVE, NEGATIVE, NEUTRAL
+  topics    String[] // AI-extracted topics
+
   createdAt DateTime @default(now())
   userId    String
   eventId   String
-  event     Event    @relation(fields: [eventId], references: [id])
+  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
   user      User     @relation(fields: [userId], references: [id])
 
   @@unique([userId, eventId])
@@ -105,17 +109,21 @@ model Feedback {
 }
 
 model EventAnalytics {
-  id                 String   @id @default(cuid())
-  totalViews         Int      @default(0)
-  totalRegistrations Int      @default(0)
-  totalAttendees     Int      @default(0)
+  id                 String    @id @default(cuid())
+  totalViews         Int       @default(0)
+  totalRegistrations Int       @default(0)
+  checkedInCount     Int       @default(0)
+  attendanceRate     Float     @default(0)
   averageRating      Float?
   sentimentScore     Float?
   engagementScore    Float?
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
-  eventId            String   @unique
-  event              Event    @relation(fields: [eventId], references: [id])
+  totalFeedback      Int       @default(0)
+  completedAt        DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  eventId   String   @unique
+  event     Event    @relation(fields: [eventId], references: [id])
 
   @@map("event_analytics")
 }

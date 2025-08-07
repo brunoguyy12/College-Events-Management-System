@@ -13,7 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { ImageUpload } from "@/components/image-upload"
+import { ImageUpload } from "@/components/image-upload";
 import {
   Form,
   FormControl,
@@ -36,8 +36,14 @@ const profileSchema = z.object({
     .max(50, "Last name must be less than 50 characters"),
   email: z.string().email("Invalid email address"),
   bio: z.string().max(500, "Bio must be less than 500 characters").optional(),
-  skills: z.string().max(200, "Skills must be less than 200 characters").optional(),
-  interests: z.string().max(200, "Interests must be less than 200 characters").optional(),
+  skills: z
+    .string()
+    .max(200, "Skills must be less than 200 characters")
+    .optional(),
+  interests: z
+    .string()
+    .max(200, "Interests must be less than 200 characters")
+    .optional(),
   avatar: z.string().optional(),
 });
 
@@ -70,8 +76,9 @@ export function ProfileForm({ user, dbUser }: ProfileFormProps) {
   const { user: clerkUser } = useUser();
   const [isEditing, setIsEditing] = useState(!user.firstName || !user.lastName);
   const [isPending, startTransition] = useTransition();
-  const [avatarUrl, setAvatarUrl] = useState(dbUser.avatar || user.avatar || "")
-
+  const [avatarUrl, setAvatarUrl] = useState(
+    dbUser.avatar || user.avatar || ""
+  );
 
   const isProfileIncomplete = !user.firstName || !user.lastName;
 
@@ -99,12 +106,20 @@ export function ProfileForm({ user, dbUser }: ProfileFormProps) {
           });
 
           // Update Clerk profile image if changed
-            if (avatarUrl && avatarUrl !== user.avatar) {
-              await clerkUser.setProfileImage({ file: avatarUrl })
+          if (avatarUrl && avatarUrl !== user.avatar) {
+            const resultImage = await clerkUser.setProfileImage({
+              file: avatarUrl,
+            });
+
+            if (resultImage) {
+              setAvatarUrl(resultImage.publicUrl || avatarUrl);
+              resultImage.reload();
+            } else {
+              toast.error("Failed to update profile image.");
+              return;
             }
+          }
         }
-
-
 
         // Update database
         const response = await fetch("/api/profile", {
@@ -154,7 +169,7 @@ export function ProfileForm({ user, dbUser }: ProfileFormProps) {
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2">
-            <User className="h-5 w-5" />
+            {/* <User className="h-5 w-5" /> */}
             Profile Information
           </CardTitle>
           {!isProfileIncomplete && (
@@ -198,7 +213,6 @@ export function ProfileForm({ user, dbUser }: ProfileFormProps) {
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-
             {/* Profile Image */}
             <div className="space-y-4">
               <div className="flex items-center gap-2">
@@ -206,7 +220,10 @@ export function ProfileForm({ user, dbUser }: ProfileFormProps) {
                 <h3 className="text-lg font-medium">Profile Image</h3>
               </div>
 
-              <ImageUpload currentImage={avatarUrl} onImageChange={setAvatarUrl} />
+              <ImageUpload
+                currentImage={avatarUrl}
+                onImageChange={setAvatarUrl}
+              />
             </div>
 
             {/* Basic Information */}
@@ -274,7 +291,6 @@ export function ProfileForm({ user, dbUser }: ProfileFormProps) {
                 )}
               />
             </div>
-
 
             {/* Additional Information */}
             <div className="space-y-4">
@@ -382,14 +398,11 @@ export function ProfileForm({ user, dbUser }: ProfileFormProps) {
                   <div>
                     <h4 className="text-sm font-medium mb-2">Skills</h4>
                     <div className="flex flex-wrap gap-2">
-                      
                       {dbUser.skills.split(",").map((skill, index) => (
                         <Badge key={index} variant="outline">
                           {skill.trim()}
                         </Badge>
                       ))}
-
-
                     </div>
                   </div>
                 )}
