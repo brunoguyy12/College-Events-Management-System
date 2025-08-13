@@ -37,6 +37,7 @@ export async function POST(request: NextRequest) {
     await db.eventAnalytics.create({
       data: {
         eventId: event.id,
+        completedAt: new Date(0),
       },
     });
 

@@ -109,16 +109,17 @@ model Feedback {
 }
 
 model EventAnalytics {
-  id                 String    @id @default(cuid())
-  totalViews         Int       @default(0)
-  totalRegistrations Int       @default(0)
-  checkedInCount     Int       @default(0)
-  attendanceRate     Float     @default(0)
-  averageRating      Float?
-  sentimentScore     Float?
-  engagementScore    Float?
-  totalFeedback      Int       @default(0)
-  completedAt        DateTime?
+  id                 String @id @default(cuid())
+  totalViews         Int    @default(0)
+  totalRegistrations Int    @default(0)
+  checkedInCount     Int    @default(0)
+  attendanceRate     Float  @default(0)
+
+  averageRating   Float?
+  sentimentScore  Float?
+  engagementScore Float?
+  totalFeedback   Int       @default(0)
+  completedAt     DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

@@ -4,6 +4,8 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
 import { Toaster } from "@/components/ui/toaster";
+import FAQChatbot from "@/components/FAQChatbot";
+import EnhancedChatbot from "@/components/enhanced-chatbot";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -24,6 +26,9 @@ export default function RootLayout({
         <Providers>
           {children}
           <Toaster />
+          {/* <FAQChatbot /> */}
+
+          <EnhancedChatbot />
         </Providers>
       </body>
     </html>
