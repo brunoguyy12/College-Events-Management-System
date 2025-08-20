@@ -1,122 +1,195 @@
 import { Suspense } from "react";
-import { db } from "@/lib/db";
-import { EventsGrid } from "@/components/events-grid";
-import { EventsFilter } from "@/components/events-filter";
-import { EventCategory } from "@prisma/client";
 import { auth } from "@clerk/nextjs/server";
 import { getAuthUser } from "@/lib/auth";
-import { BreadcrumbNav } from "@/components/breadcrumb-nav";
-import { Button } from "@/components/ui/button";
-import Link from "next/link";
-import { Plus } from "lucide-react";
+import { db } from "@/lib/db";
+import { EnhancedEventsGrid } from "@/components/enhanced-events-grid";
+import { EventsFilter } from "@/components/events-filter";
 import { EventsGridSkeleton } from "@/components/skeletons/events-skeleton";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Plus, Calendar, History } from "lucide-react";
+import Link from "next/link";
+import { EventsGrid } from "@/components/events-grid";
 
 interface EventsPageProps {
   searchParams: {
-    category?: EventCategory;
+    category?: string;
     search?: string;
-    date?: string
+    date?: string;
+    department?: string;
   };
 }
 
 export default async function EventsPage({ searchParams }: EventsPageProps) {
-  const { category: awaitedCategory, search: awaitedSearch, date: awaitedDate } =
-    await searchParams;
+  const { userId } = await auth();
+  const user = await getAuthUser();
 
-    const { userId } = await auth()
-  const user = await getAuthUser()
+  const { category, search, date, department } = searchParams;
 
-  const breadcrumbItems = [{ title: "Dashboard", href: "/dashboard" }, { title: "Events" }]
-
-  // Build filter conditions
-  const where: any = {
+  // Base filter conditions
+  const baseWhere: any = {
     status: "PUBLISHED",
-    // Only show upcoming events (not completed)
-    endDate: {
-      gte: new Date(),
-    },
+  };
+
+  if (category && category !== "all") {
+    baseWhere.category = category;
   }
 
-  if (awaitedCategory) {
-    where.category = awaitedCategory
+  if (department && department !== "all") {
+    baseWhere.department = department;
   }
 
-  if (awaitedSearch) {
-    where.OR = [
-      { title: { contains: awaitedSearch, mode: "insensitive" } },
-      { description: { contains: awaitedSearch, mode: "insensitive" } },
-      { venue: { contains: awaitedSearch, mode: "insensitive" } },
-    ]
+  if (search) {
+    baseWhere.OR = [
+      { title: { contains: search, mode: "insensitive" } },
+      { description: { contains: search, mode: "insensitive" } },
+      { venue: { contains: search, mode: "insensitive" } },
+    ];
   }
 
-  if (awaitedDate) {
-    const selectedDate = new Date(awaitedDate)
-    const nextDay = new Date(selectedDate)
-    nextDay.setDate(nextDay.getDate() + 1)
+  if (date) {
+    const selectedDate = new Date(date);
+    const nextDay = new Date(selectedDate);
+    nextDay.setDate(nextDay.getDate() + 1);
 
-    where.startDate = {
+    baseWhere.startDate = {
       gte: selectedDate,
       lt: nextDay,
-    }
+    };
   }
 
-  const events = await db.event.findMany({
-    where,
+  // Upcoming events (not ended yet)
+  const upcomingEvents = await db.event.findMany({
+    where: {
+      ...baseWhere,
+      endDate: {
+        gte: new Date(),
+      },
+    },
     include: {
-      organizer: true,
+      organizer: {
+        select: {
+          name: true,
+          avatar: true,
+        },
+      },
       _count: { select: { registrations: true } },
-      registrations: userId ? { where: { userId } } : false,
+      registrations: userId
+        ? {
+            where: { userId },
+            select: { id: true },
+          }
+        : false,
     },
     orderBy: { startDate: "asc" },
   });
 
-  // const categories = await db.event.findMany({
-  //   where: {
-  //     status: "PUBLISHED",
-  //     endDate: { gte: new Date() },
-  //   },
-  //   select: { category: true },
-  //   distinct: ["category"],
-  // })
+  // Past events (already ended)
+  const pastEvents = await db.event.findMany({
+    where: {
+      ...baseWhere,
+      endDate: {
+        lt: new Date(),
+      },
+    },
+    include: {
+      organizer: {
+        select: {
+          name: true,
+          avatar: true,
+        },
+      },
+      _count: { select: { registrations: true } },
+      registrations: userId
+        ? {
+            where: { userId },
+            select: { id: true },
+          }
+        : false,
+    },
+    orderBy: { startDate: "desc" },
+  });
 
-  // const uniqueCategories = categories.map((c) => c.category).filter(Boolean)
+  const canCreateEvent =
+    user && (user.role === "ORGANIZER" || user.role === "ADMIN");
 
   return (
-    <div className="space-y-6 px-6">
+    <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <div className="space-y-2">
-          <BreadcrumbNav items={breadcrumbItems} />
-      <div>
-        <h1 className="text-3xl font-bold">Discover Events</h1>
-        <p className="text-muted-foreground">
-          Find and register for exciting college events.
-        </p>
-      </div>
-      </div>
-
-      </div>
-
-      <EventsFilter/>
-
-      <Suspense fallback={<EventsGridSkeleton />}>
-        <EventsGrid events={events} />
-      </Suspense>
-
-      {events.length === 0 && (
-        <div className="text-center py-12">
-          <h3 className="text-lg font-semibold mb-2">No events found</h3>
-          <p className="text-muted-foreground mb-4">
-            {awaitedSearch || awaitedCategory || awaitedDate
-              ? "Try adjusting your filters to find more events."
-              : "There are no upcoming events at the moment."}
+        <div>
+          <h1 className="text-3xl font-bold">College Events</h1>
+          <p className="text-muted-foreground">
+            Discover and participate in exciting college events
           </p>
-          {user && (user.role === "ORGANIZER" || user.role === "ADMIN") && (
-            <Button asChild>
-              <Link href="/events/create">Create the first event</Link>
-            </Button>
-          )}
         </div>
-      )}
+        {canCreateEvent && (
+          <Button asChild>
+            <Link href="/events/create">
+              <Plus className="h-4 w-4 mr-2" />
+              Create Event
+            </Link>
+          </Button>
+        )}
+      </div>
+
+      <EventsFilter />
+
+      <Tabs defaultValue="upcoming" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="upcoming" className="flex items-center gap-2">
+            <Calendar className="h-4 w-4" />
+            Upcoming Events ({upcomingEvents.length})
+          </TabsTrigger>
+          <TabsTrigger value="past" className="flex items-center gap-2">
+            <History className="h-4 w-4" />
+            Past Events ({pastEvents.length})
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="upcoming">
+          <Suspense fallback={<EventsGridSkeleton />}>
+            <EnhancedEventsGrid
+              events={upcomingEvents}
+              currentUserId={userId}
+            />
+          </Suspense>
+          {upcomingEvents.length === 0 && (
+            <div className="text-center py-12">
+              <h3 className="text-lg font-semibold mb-2">
+                No upcoming events found
+              </h3>
+              <p className="text-muted-foreground mb-4">
+                {search || category || date || department
+                  ? "Try adjusting your filters to find more events."
+                  : "There are no upcoming events at the moment."}
+              </p>
+              {canCreateEvent && (
+                <Button asChild>
+                  <Link href="/events/create">Create the first event</Link>
+                </Button>
+              )}
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="past">
+          <Suspense fallback={<EventsGridSkeleton />}>
+            <EnhancedEventsGrid events={pastEvents} currentUserId={userId} />
+          </Suspense>
+          {pastEvents.length === 0 && (
+            <div className="text-center py-12">
+              <h3 className="text-lg font-semibold mb-2">
+                No past events found
+              </h3>
+              <p className="text-muted-foreground">
+                {search || category || date || department
+                  ? "Try adjusting your filters to find more past events."
+                  : "There are no past events to display."}
+              </p>
+            </div>
+          )}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

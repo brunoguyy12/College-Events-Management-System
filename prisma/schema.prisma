@@ -47,23 +47,37 @@ model RoleRequest {
 }
 
 model Event {
-  id            String          @id @default(cuid())
-  title         String
-  description   String
-  category      EventCategory
-  venue         String
-  startDate     DateTime
-  endDate       DateTime
-  capacity      Int
-  price         Float           @default(0)
-  status        EventStatus     @default(DRAFT)
-  imageUrl      String?
-  tags          String[]
+  id          String        @id @default(cuid())
+  title       String
+  description String
+  category    EventCategory
+  department  Department    @default(COMPUTER_ENGINEERING) // NEW: Department enum with default
+  venue       String
+  startDate   DateTime
+  endDate     DateTime
+  capacity    Int
+  price       Float         @default(0)
+  status      EventStatus   @default(DRAFT)
+  imageUrl    String? // Banner Image
+  tags        String[]
+
+  // Ai-generated Fields 
   aiScore       Float?
   aiSuggestions String?
-  organizerId   String
-  createdAt     DateTime        @default(now())
-  updatedAt     DateTime        @updatedAt
+
+  // Rich content fields (JSON)
+  speakers     Json? // Speaker profiles for seminars/conferences
+  agenda       Json? // Schedule/timetable
+  prizes       Json? // Prize details for competitions
+  rules        Json? // Rules and regulations
+  requirements Json? // Prerequisites/materials needed
+  faqs         Json? // Frequently asked questions
+  highlights   Json? // Past event highlights
+
+  organizerId String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
   analytics     EventAnalytics?
   organizer     User            @relation("EventOrganizer", fields: [organizerId], references: [id])
   feedback      Feedback[]
@@ -188,4 +202,47 @@ enum NotificationType {
   FEEDBACK_REQUEST
   SYSTEM_ALERT
   ROLE_REQUEST_UPDATE
+}
+
+// NEW: Department enum
+enum Department {
+  // Engineering
+  COMPUTER_ENGINEERING
+  ELECTRICAL_ENGINEERING
+  CIVIL_ENGINEERING
+  MECHANICAL_ENGINEERING
+  CHEMICAL_ENGINEERING
+
+  // Medical & Health
+  PHYSIOTHERAPY
+  PHARMACY
+
+  // Science
+  MICROBIOLOGY
+  AGRICULTURE
+  BIOTECHNOLOGY
+  CHEMISTRY
+  PHYSICS
+  MATHEMATICS
+
+  // Business & Law
+  BUSINESS_ADMINISTRATION
+  LAW
+  COMMERCE
+
+  // Computer Applications
+  COMPUTER_APPLICATION
+  INFORMATION_TECHNOLOGY
+
+  // Arts & Humanities
+  ARTS
+  ENGLISH
+  HISTORY
+
+  // Sports & Physical Education
+  SPORTS
+  PHYSICAL_EDUCATION
+
+  // Other
+  OTHER
 }
