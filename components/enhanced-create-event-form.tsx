@@ -27,6 +27,7 @@ import {
   getDepartmentsByCategory,
   Department,
 } from "@/lib/departments";
+import { parseInputDate } from "@/lib/timezone";
 import { GenericImageUpload } from "@/components/generic-image-upload";
 
 const eventSchema = z.object({
@@ -225,6 +226,29 @@ export function EnhancedCreateEventForm({
   const onSubmit = async (data: EventFormData) => {
     setIsLoading(true);
     try {
+      // Parse dates with proper timezone handling
+      const startDate = parseInputDate(data.startDate);
+      const endDate = parseInputDate(data.endDate);
+
+      // Validate dates
+      if (startDate >= endDate) {
+        toast({
+          title: "Invalid Dates",
+          description: "End date must be after start date.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (startDate <= new Date()) {
+        toast({
+          title: "Invalid Start Date",
+          description: "Start date must be in the future.",
+          variant: "destructive",
+        });
+        return;
+      }
+
       const eventData = {
         ...data,
         organizerId: userId,
@@ -248,14 +272,18 @@ export function EnhancedCreateEventForm({
           title: "Success",
           description: "Event created successfully!",
         });
-        router.push("/events/my-events");
+        router.push("/my-events");
       } else {
-        throw new Error("Failed to create event");
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to create event");
       }
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to create event. Please try again.",
+        description:
+          error instanceof Error
+            ? error.message
+            : "Failed to create event. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -689,21 +717,27 @@ export function EnhancedCreateEventForm({
 
                 <div className="grid gap-4 md:grid-cols-2">
                   <div className="space-y-2">
-                    <Label htmlFor="startDate">Start Date & Time</Label>
+                    <Label htmlFor="startDate">Start Date & Time (IST)</Label>
                     <Input
                       id="startDate"
                       type="datetime-local"
                       {...form.register("startDate")}
                     />
+                    <p className="text-xs text-muted-foreground">
+                      Time will be saved in Indian Standard Time (IST)
+                    </p>
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="endDate">End Date & Time</Label>
+                    <Label htmlFor="endDate">End Date & Time (IST)</Label>
                     <Input
                       id="endDate"
                       type="datetime-local"
                       {...form.register("endDate")}
                     />
+                    <p className="text-xs text-muted-foreground">
+                      Registration deadline is the start date
+                    </p>
                   </div>
                 </div>
 

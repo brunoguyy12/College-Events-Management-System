@@ -3,7 +3,10 @@ import { auth } from "@clerk/nextjs/server";
 import { getAuthUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 // import { EventDetails } from "@/components/event-details";
-import { EnhancedEventDetails } from "@/components/enhanced-event-details";
+import {
+  EnhancedEventDetails,
+  EnhancedEventDetailsProps,
+} from "@/components/enhanced-event-details";
 import { EventRegistration } from "@/components/event-registration";
 import { BreadcrumbNav } from "@/components/breadcrumb-nav";
 import { Button } from "@/components/ui/button";
@@ -60,19 +63,7 @@ export default async function EventPage({ params }: EventPageProps) {
     },
   });
 
-  // Parse all JSON Fields
-  const parsedEvent = {
-    ...event,
-    speakers: event.speakers ? JSON.parse(String(event.speakers)) : null,
-    agenda: event.agenda ? JSON.parse(String(event.agenda)) : null,
-    prizes: event.prizes ? JSON.parse(String(event.prizes)) : null,
-    rules: event.rules ? JSON.parse(String(event.rules)) : null,
-    requirements: event.requirements
-      ? JSON.parse(String(event.requirements))
-      : null,
-    faqs: event.faqs ? JSON.parse(String(event.faqs)) : null,
-    highlights: event.highlights ? JSON.parse(String(event.highlights)) : null,
-  };
+  // console.log("Event Details:", event);
 
   return (
     <div className="space-y-6 px-6">
@@ -91,7 +82,9 @@ export default async function EventPage({ params }: EventPageProps) {
       <div className=" grid gap-8 lg:grid-cols-3">
         <div className="lg:col-span-2">
           {/* <EventDetails event={event} /> */}
-          <EnhancedEventDetails event={parsedEvent} />
+          <EnhancedEventDetails
+            event={event as EnhancedEventDetailsProps["event"]}
+          />
         </div>
         <div>
           {/* <EventRegistration

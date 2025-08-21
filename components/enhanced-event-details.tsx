@@ -18,32 +18,32 @@ import Image from "next/image";
 import { getDefaultBanner } from "@/lib/utils";
 import { Prisma } from "@prisma/client";
 
-interface Speaker {
+export interface Speaker {
   name: string;
   bio: string;
   expertise: string;
   linkedIn?: string;
 }
 
-interface AgendaItem {
+export interface AgendaItem {
   time: string;
   title: string;
   description: string;
   speaker?: string;
 }
 
-interface Prize {
+export interface Prize {
   position: string;
   amount: string;
   description: string;
 }
 
-interface FAQ {
+export interface FAQ {
   question: string;
   answer: string;
 }
 
-interface EnhancedEventDetailsProps {
+export interface EnhancedEventDetailsProps {
   event: {
     id: string;
     title: string;
@@ -122,12 +122,12 @@ export function EnhancedEventDetails({ event }: EnhancedEventDetailsProps) {
             >
               {event.department}
             </Badge>
-            {event.aiScore && (
+            {/* {event.aiScore && (
               <div className="flex items-center gap-1 text-sm bg-white/20 px-2 py-1 rounded">
                 <Star className="h-3 w-3 text-yellow-400" />
                 <span>{event.aiScore}/100 AI Score</span>
               </div>
-            )}
+            )} */}
           </div>
           <h1 className="text-2xl md:text-4xl font-bold mb-2">{event.title}</h1>
           <div className="flex items-center gap-4 text-sm">

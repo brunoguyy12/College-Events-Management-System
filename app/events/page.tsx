@@ -7,7 +7,7 @@ import { EventsFilter } from "@/components/events-filter";
 import { EventsGridSkeleton } from "@/components/skeletons/events-skeleton";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Calendar, History } from "lucide-react";
+import { Plus, Calendar, History, Clock } from "lucide-react";
 import Link from "next/link";
 import { EventsGrid } from "@/components/events-grid";
 
@@ -24,11 +24,11 @@ export default async function EventsPage({ searchParams }: EventsPageProps) {
   const { userId } = await auth();
   const user = await getAuthUser();
 
-  const { category, search, date, department } = searchParams;
+  const { category, search, date, department } = await searchParams;
 
   // Base filter conditions
   const baseWhere: any = {
-    status: "PUBLISHED",
+    status: { in: ["PUBLISHED", "COMPLETED"] },
   };
 
   if (category && category !== "all") {
@@ -58,12 +58,44 @@ export default async function EventsPage({ searchParams }: EventsPageProps) {
     };
   }
 
+  const now = new Date();
+
   // Upcoming events (not ended yet)
   const upcomingEvents = await db.event.findMany({
     where: {
       ...baseWhere,
       endDate: {
-        gte: new Date(),
+        gte: now,
+      },
+    },
+    include: {
+      organizer: {
+        select: {
+          name: true,
+          avatar: true,
+        },
+      },
+      _count: { select: { registrations: true } },
+      registrations: userId
+        ? {
+            where: { userId },
+            select: { id: true },
+          }
+        : false,
+    },
+    orderBy: { startDate: "asc" },
+  });
+
+  // Ongoing events (started but not ended)
+  const ongoingEvents = await db.event.findMany({
+    where: {
+      ...baseWhere,
+      status: { in: ["PUBLISHED", "ONGOING"] },
+      startDate: {
+        lte: now,
+      },
+      endDate: {
+        gte: now,
       },
     },
     include: {
@@ -89,7 +121,7 @@ export default async function EventsPage({ searchParams }: EventsPageProps) {
     where: {
       ...baseWhere,
       endDate: {
-        lt: new Date(),
+        lt: now,
       },
     },
     include: {
@@ -122,27 +154,31 @@ export default async function EventsPage({ searchParams }: EventsPageProps) {
             Discover and participate in exciting college events
           </p>
         </div>
-        {canCreateEvent && (
+        {/* {canCreateEvent && (
           <Button asChild>
             <Link href="/events/create">
               <Plus className="h-4 w-4 mr-2" />
               Create Event
             </Link>
           </Button>
-        )}
+        )} */}
       </div>
 
       <EventsFilter />
 
       <Tabs defaultValue="upcoming" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="upcoming" className="flex items-center gap-2">
             <Calendar className="h-4 w-4" />
-            Upcoming Events ({upcomingEvents.length})
+            Upcoming ({upcomingEvents.length})
+          </TabsTrigger>
+          <TabsTrigger value="ongoing" className="flex items-center gap-2">
+            <Clock className="h-4 w-4" />
+            Ongoing ({ongoingEvents.length})
           </TabsTrigger>
           <TabsTrigger value="past" className="flex items-center gap-2">
             <History className="h-4 w-4" />
-            Past Events ({pastEvents.length})
+            Past ({pastEvents.length})
           </TabsTrigger>
         </TabsList>
 
@@ -168,6 +204,26 @@ export default async function EventsPage({ searchParams }: EventsPageProps) {
                   <Link href="/events/create">Create the first event</Link>
                 </Button>
               )}
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="ongoing">
+          <Suspense fallback={<EventsGridSkeleton />}>
+            <EnhancedEventsGrid
+              events={ongoingEvents}
+              currentUserId={userId}
+              showOngoingBadge={true}
+            />
+          </Suspense>
+          {ongoingEvents.length === 0 && (
+            <div className="text-center py-12">
+              <h3 className="text-lg font-semibold mb-2">No ongoing events</h3>
+              <p className="text-muted-foreground">
+                {search || category || date || department
+                  ? "Try adjusting your filters to find ongoing events."
+                  : "There are no events happening right now."}
+              </p>
             </div>
           )}
         </TabsContent>

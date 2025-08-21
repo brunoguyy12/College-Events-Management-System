@@ -7,6 +7,7 @@ import { BreadcrumbNav } from "@/components/breadcrumb-nav";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import Link from "next/link";
+import { EnhancedEventsGrid } from "@/components/enhanced-events-grid";
 
 export default async function MyEventsPage() {
   const { userId } = await auth();
@@ -30,6 +31,12 @@ export default async function MyEventsPage() {
   const events = await db.event.findMany({
     where: { organizerId: userId },
     include: {
+      organizer: {
+        select: {
+          name: true,
+          avatar: true,
+        },
+      },
       _count: { select: { registrations: true } },
     },
     orderBy: { createdAt: "desc" },
@@ -61,7 +68,13 @@ export default async function MyEventsPage() {
         </Button>
       </div>
 
-      <MyEventsGrid events={events} />
+      {/* <MyEventsGrid events={events} /> */}
+      <EnhancedEventsGrid
+        events={events}
+        currentUserId={userId}
+        userRole={user.role}
+        showActions={true}
+      />
     </div>
   );
 }
