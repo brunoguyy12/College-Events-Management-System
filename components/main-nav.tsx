@@ -3,7 +3,15 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { Calendar, Home, Settings, Shield, BarChart3 } from "lucide-react";
+import {
+  Calendar,
+  Home,
+  Settings,
+  Shield,
+  BarChart3,
+  BookOpen,
+  Bell,
+} from "lucide-react";
 import { useUser } from "@clerk/nextjs";
 
 interface MainNavProps {
@@ -39,8 +47,22 @@ export function MainNav({ userRole }: MainNavProps) {
       icon: BarChart3,
       active: pathname === "/analytics",
     },
+    {
+      label: "Notifications",
+      href: "/notifications",
+      icon: Bell,
+      active: pathname === "/notifications",
+    },
   ];
 
+  if (userRole === "STUDENT") {
+    routes.push({
+      label: "My Registrations",
+      href: "/my-registrations",
+      icon: BookOpen,
+      active: pathname === "/my-registrations",
+    });
+  }
   // Add admin-only routes
   if (userRole === "ADMIN") {
     routes.push({
@@ -59,13 +81,13 @@ export function MainNav({ userRole }: MainNavProps) {
   });
 
   return (
-    <nav className="flex items-center space-x-4 lg:space-x-6">
+    <nav className="flex items-start md:items-center flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-4 lg:space-x-6">
       {routes.map((route) => (
         <Link
           key={route.href}
           href={route.href}
           className={cn(
-            "flex items-center gap-2 text-sm font-medium transition-colors hover:text-primary",
+            "flex items-center gap-2 text-base lg:text-sm font-medium transition-colors hover:text-primary",
             route.active
               ? "text-black dark:text-white"
               : "text-muted-foreground"

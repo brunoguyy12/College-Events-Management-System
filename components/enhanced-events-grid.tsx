@@ -96,8 +96,8 @@ export function EnhancedEventsGrid({
 
       if (response.ok) {
         toast({
-          title: "Event Deleted",
-          description: "The event has been successfully deleted.",
+          title: "Success",
+          description: "Event deleted successfully",
         });
         // Refresh the page to update the events list
         window.location.reload();
@@ -107,11 +107,37 @@ export function EnhancedEventsGrid({
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to delete event. Please try again.",
+        description:
+          error instanceof Error ? error.message : "Failed to delete event",
         variant: "destructive",
       });
     } finally {
       setDeletingEventId(null);
+    }
+  };
+
+  const getStatusBadge = (event: Event) => {
+    const status = getEventStatus(
+      new Date(event.startDate),
+      new Date(event.endDate)
+    );
+
+    switch (status) {
+      case "upcoming":
+        return <Badge variant="secondary">Upcoming</Badge>;
+      case "ongoing":
+        return (
+          <Badge
+            variant="default"
+            className="bg-green-500 hover:bg-green-600 animate-pulse"
+          >
+            🔴 Live
+          </Badge>
+        );
+      case "past":
+        return <Badge variant="outline">Completed</Badge>;
+      default:
+        return <Badge variant="secondary">Unknown</Badge>;
     }
   };
 
@@ -121,6 +147,15 @@ export function EnhancedEventsGrid({
 
   const canDeleteEvent = (event: Event) => {
     const eventStatus = getEventStatus(event.startDate, event.endDate);
+
+    console.log(
+      `Can I delete event ${event.title}?`,
+      (userRole === "ADMIN" || event.organizerId === currentUserId) &&
+        eventStatus !== "past"
+    );
+
+    console.log("User Role:", userRole);
+    console.log("Event Status:", eventStatus);
     return (
       (userRole === "ADMIN" || event.organizerId === currentUserId) &&
       eventStatus !== "past"
@@ -177,6 +212,7 @@ export function EnhancedEventsGrid({
                     </Badge>
                   )}
                 </div>
+
                 <div className="absolute bottom-3 left-3 right-3">
                   <Badge
                     style={{
@@ -186,7 +222,10 @@ export function EnhancedEventsGrid({
                     }}
                     className="mb-2"
                   >
-                    {getDepartmentDisplayName(event.department as any)}
+                    {getDepartmentDisplayName(event.department as any).replace(
+                      /_/g,
+                      " "
+                    )}
                   </Badge>
                   <h3 className="text-white font-semibold text-lg line-clamp-2">
                     {event.title}
@@ -250,7 +289,7 @@ export function EnhancedEventsGrid({
                       </span>
                     </div>
                     <div className="flex items-center gap-1">
-                      <IndianRupee className="h-3 w-3" />
+                      {/* <IndianRupee className="h-3 w-3" /> */}
                       <span className="font-medium text-sm">
                         {event.price === 0 ? "Free" : `₹${event.price}`}
                       </span>

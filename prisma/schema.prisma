@@ -8,12 +8,20 @@ datasource db {
 }
 
 model User {
-  id              String         @id @default(cuid())
-  email           String         @unique
-  name            String
-  role            UserRole       @default(STUDENT)
-  avatar          String?
-  bio             String?
+  id     String   @id @default(cuid())
+  email  String   @unique
+  name   String
+  role   UserRole @default(STUDENT)
+  avatar String?
+  bio    String?
+
+  phone      String?
+  year       String?
+  rollNumber String?
+  linkedIn   String?
+  github     String?
+  portfolio  String?
+
   skills          String?
   interests       String?
   createdAt       DateTime       @default(now())
@@ -27,23 +35,6 @@ model User {
   processedRequests RoleRequest[] @relation("AdminProcessedRequests")
 
   @@map("users")
-}
-
-model RoleRequest {
-  id            String            @id @default(cuid())
-  requestedRole UserRole
-  reason        String
-  status        RoleRequestStatus @default(PENDING)
-  createdAt     DateTime          @default(now())
-  updatedAt     DateTime          @updatedAt
-  processedAt   DateTime?
-
-  userId      String
-  user        User    @relation("UserRoleRequests", fields: [userId], references: [id])
-  processedBy String?
-  processor   User?   @relation("AdminProcessedRequests", fields: [processedBy], references: [id])
-
-  @@map("role_requests")
 }
 
 model Event {
@@ -82,6 +73,7 @@ model Event {
   organizer     User            @relation("EventOrganizer", fields: [organizerId], references: [id])
   feedback      Feedback[]
   registrations Registration[]
+  Notification  Notification[]
 
   @@map("events")
 }
@@ -143,17 +135,58 @@ model EventAnalytics {
   @@map("event_analytics")
 }
 
+// model Notification {
+//   id        String           @id @default(cuid())
+//   title     String
+//   message   String
+//   type      NotificationType
+//   read      Boolean          @default(false)
+//   createdAt DateTime         @default(now())
+//   userId    String
+//   user      User             @relation(fields: [userId], references: [id])
+
+//   @@map("notifications")
+// }
+
 model Notification {
-  id        String           @id @default(cuid())
+  id        String               @id @default(cuid())
+  userId    String
+  eventId   String?
+  type      NotificationType
   title     String
   message   String
-  type      NotificationType
-  read      Boolean          @default(false)
-  createdAt DateTime         @default(now())
-  userId    String
-  user      User             @relation(fields: [userId], references: [id])
+  priority  NotificationPriority @default(MEDIUM)
+  read      Boolean              @default(false)
+  emailSent Boolean              @default(false)
+  data      Json? // Additional data for the notification
+  createdAt DateTime             @default(now())
+  updatedAt DateTime             @default(now()) @updatedAt
+
+  // Relations
+  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  event Event? @relation(fields: [eventId], references: [id], onDelete: Cascade)
 
   @@map("notifications")
+}
+
+model RoleRequest {
+  id            String            @id @default(cuid())
+  requestedRole UserRole
+  reason        String
+  status        RoleRequestStatus @default(PENDING)
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+  processedAt   DateTime?
+
+  reviewedBy String?
+  reviewedAt DateTime?
+
+  userId      String
+  user        User    @relation("UserRoleRequests", fields: [userId], references: [id])
+  processedBy String?
+  processor   User?   @relation("AdminProcessedRequests", fields: [processedBy], references: [id])
+
+  @@map("role_requests")
 }
 
 enum UserRole {
@@ -197,11 +230,21 @@ enum RegistrationStatus {
 
 enum NotificationType {
   EVENT_REMINDER
-  REGISTRATION_CONFIRMED
   EVENT_UPDATE
-  FEEDBACK_REQUEST
-  SYSTEM_ALERT
-  ROLE_REQUEST_UPDATE
+  NEW_REGISTRATION
+  FEEDBACK_RECEIVED
+  ROLE_REQUEST
+  EVENT_CREATED
+  EVENT_DELETED
+  USER_REGISTERED
+  CHECK_IN_REMINDER
+}
+
+enum NotificationPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
 }
 
 // NEW: Department enum

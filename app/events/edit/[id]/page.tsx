@@ -2,7 +2,11 @@ import { notFound, redirect } from "next/navigation";
 import { auth } from "@clerk/nextjs/server";
 import { getAuthUser } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { EditEventForm } from "@/components/edit-event-form";
+// import { EditEventForm } from "@/components/edit-event-form";
+import {
+  EnhancedEditEventForm,
+  EnhancedEditEventFormProps,
+} from "@/components/enhanced-event-form-edit";
 import { BreadcrumbNav } from "@/components/breadcrumb-nav";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
@@ -40,17 +44,15 @@ export default async function EditEventPage({ params }: EditEventPageProps) {
   }
 
   // Check if user can edit this event
-  const canEdit = user.role === "ADMIN" || event.organizerId === userId;
-
-  if (!canEdit) {
+  if (event.organizerId !== userId && user.role !== "ADMIN") {
     redirect("/events");
   }
 
   const breadcrumbItems = [
-    { title: "Dashboard", href: "/dashboard" },
+    // { title: "Dashboard", href: "/dashboard" },
     { title: "Events", href: "/events" },
     { title: event.title, href: `/events/${event.id}` },
-    { title: "Edit" },
+    { title: "Edit", href: `/events/edit/${event.id}` },
   ];
 
   return (
@@ -79,7 +81,11 @@ export default async function EditEventPage({ params }: EditEventPageProps) {
       </div>
 
       <div className="max-w-2xl">
-        <EditEventForm event={event} userId={userId} />
+        {/* <EditEventForm event={event} userId={userId} /> */}
+        <EnhancedEditEventForm
+          event={event as EnhancedEditEventFormProps["event"]}
+          userId={userId}
+        />
       </div>
     </div>
   );

@@ -12,7 +12,6 @@ export async function POST(
 
     const { id } = await params;
 
-
     const user = await getAuthUser();
 
     if (!user || (user.role !== "ORGANIZER" && user.role !== "ADMIN")) {
@@ -38,7 +37,7 @@ export async function POST(
         user: true,
         event: true,
       },
-    }); 
+    });
 
     if (!registration) {
       return NextResponse.json(
@@ -56,21 +55,20 @@ export async function POST(
     // }
 
     // Check if user can manage this event
-    const canManage = user.role === "ADMIN" || registration.event.organizerId === userId
+    const canManage =
+      user.role === "ADMIN" || registration.event.organizerId === userId;
 
     if (!canManage) {
-      return NextResponse.json({ error: "Permission denied" }, { status: 403 })
+      return NextResponse.json({ error: "Permission denied" }, { status: 403 });
     }
-
-
 
     // Update check-in status if not already checked in
     if (!registration.checkedIn) {
-    const updatedRegistration = await db.registration.update({
-      where: { id: registration.id },
-      data: { checkedIn: true },
-    });
-  }
+      const updatedRegistration = await db.registration.update({
+        where: { id: registration.id },
+        data: { checkedIn: true, checkedInAt: new Date() },
+      });
+    }
 
     return NextResponse.json({
       success: true,
@@ -78,6 +76,7 @@ export async function POST(
         id: registration.id,
         qrCode: registration.qrCode,
         checkedIn: true,
+        checkedInAt: new Date(),
         user: {
           name: registration.user.name || registration.user.email,
           email: registration.user.email,
@@ -91,7 +90,7 @@ export async function POST(
       },
     });
   } catch (error) {
-    console.error("Check-in error:", error)
-    return NextResponse.json({ error: "Check-in failed" }, { status: 500 })
+    console.error("Check-in error:", error);
+    return NextResponse.json({ error: "Check-in failed" }, { status: 500 });
   }
 }

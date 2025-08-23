@@ -21,7 +21,9 @@ export function UserNav() {
   if (!user) {
     return (
       <Button asChild variant="outline" size="sm">
-        <Link href="/sign-in">Sign In</Link>
+        <Link href="/sign-in" className="w-full">
+          Sign In
+        </Link>
       </Button>
     );
   }

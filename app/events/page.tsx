@@ -24,6 +24,8 @@ export default async function EventsPage({ searchParams }: EventsPageProps) {
   const { userId } = await auth();
   const user = await getAuthUser();
 
+  // console.log("Details from the Events page", user);
+
   const { category, search, date, department } = await searchParams;
 
   // Base filter conditions
@@ -187,6 +189,8 @@ export default async function EventsPage({ searchParams }: EventsPageProps) {
             <EnhancedEventsGrid
               events={upcomingEvents}
               currentUserId={userId}
+              userRole={user?.role}
+              showActions={true}
             />
           </Suspense>
           {upcomingEvents.length === 0 && (
@@ -201,7 +205,7 @@ export default async function EventsPage({ searchParams }: EventsPageProps) {
               </p>
               {canCreateEvent && (
                 <Button asChild>
-                  <Link href="/events/create">Create the first event</Link>
+                  <Link href="/events/create">Create an event</Link>
                 </Button>
               )}
             </div>

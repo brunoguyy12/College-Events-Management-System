@@ -1,11 +1,12 @@
+import { Suspense } from "react";
 import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { getAuthUser } from "@/lib/auth";
-import { db } from "@/lib/db";
-import { BreadcrumbNav } from "@/components/breadcrumb-nav";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Calendar, Clock, History, CheckCircle } from "lucide-react";
 import { StudentEventsGrid } from "@/components/student-events-grid";
+import { BreadcrumbNav } from "@/components/breadcrumb-nav";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { BookOpen, Calendar, Clock, CheckCircle } from "lucide-react";
+import { db } from "@/lib/db";
 
 export default async function MyRegistrationsPage() {
   const { userId } = await auth();
@@ -20,114 +21,132 @@ export default async function MyRegistrationsPage() {
     redirect("/sign-in");
   }
 
-  const now = new Date();
+  const breadcrumbItems = [
+    { title: "Events", href: "/events" },
+    { title: "My Registrations", href: "/my-registrations" },
+  ];
 
-  // Get all registrations with event details
-  const registrations = await db.registration.findMany({
-    where: { userId },
-    include: {
-      event: {
-        include: {
-          organizer: {
-            select: {
-              name: true,
-              avatar: true,
+  const [totalRegistered, upcomingEvents, ongoingEvents, attendedEvents] =
+    await Promise.all([
+      db.registration.count({
+        where: {
+          userId,
+        },
+      }),
+      db.event.count({
+        where: {
+          registrations: {
+            some: {
+              userId,
             },
           },
-          _count: { select: { registrations: true } },
+          startDate: {
+            gte: new Date(),
+          },
         },
-      },
-    },
-    orderBy: { createdAt: "desc" },
-  });
-
-  // Categorize events
-  const upcomingRegistrations = registrations.filter(
-    (reg) => new Date(reg.event.startDate) > now
-  );
-
-  const ongoingRegistrations = registrations.filter(
-    (reg) =>
-      new Date(reg.event.startDate) <= now && new Date(reg.event.endDate) >= now
-  );
-
-  const pastRegistrations = registrations.filter(
-    (reg) => new Date(reg.event.endDate) < now
-  );
-
-  const breadcrumbItems = [
-    { title: "Dashboard", href: "/dashboard" },
-    { title: "Events", href: "/events" },
-    { title: "My Registrations" },
-  ];
+      }),
+      db.event.count({
+        where: {
+          registrations: {
+            some: {
+              userId,
+            },
+          },
+          startDate: {
+            lt: new Date(),
+          },
+          endDate: {
+            gte: new Date(),
+          },
+        },
+      }),
+      db.event.count({
+        where: {
+          registrations: {
+            some: {
+              userId,
+              checkedIn: true,
+            },
+          },
+          endDate: {
+            lt: new Date(),
+          },
+        },
+      }),
+    ]);
 
   return (
     <div className="space-y-6">
-      <div className="space-y-2">
-        <BreadcrumbNav items={breadcrumbItems} />
+      <BreadcrumbNav items={breadcrumbItems} />
+
+      <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">My Event Registrations</h1>
-          <p className="text-muted-foreground">
-            Track and manage your registered events
+          <p className="text-muted-foreground mt-2">
+            Track all your registered events and their status
           </p>
         </div>
       </div>
 
-      <Tabs defaultValue="upcoming" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="upcoming" className="flex items-center gap-2">
-            <Calendar className="h-4 w-4" />
-            Upcoming ({upcomingRegistrations.length})
-          </TabsTrigger>
-          <TabsTrigger value="ongoing" className="flex items-center gap-2">
-            <Clock className="h-4 w-4" />
-            Ongoing ({ongoingRegistrations.length})
-          </TabsTrigger>
-          <TabsTrigger value="past" className="flex items-center gap-2">
-            <History className="h-4 w-4" />
-            Past ({pastRegistrations.length})
-          </TabsTrigger>
-          <TabsTrigger value="all" className="flex items-center gap-2">
-            <CheckCircle className="h-4 w-4" />
-            All ({registrations.length})
-          </TabsTrigger>
-        </TabsList>
+      <div className="grid gap-4 md:grid-cols-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
+              Total Registered
+            </CardTitle>
+            <BookOpen className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{totalRegistered}</div>
+            <p className="text-xs text-muted-foreground">
+              All time registrations
+            </p>
+          </CardContent>
+        </Card>
 
-        <TabsContent value="upcoming">
-          <StudentEventsGrid
-            registrations={upcomingRegistrations}
-            title="Upcoming Events"
-            emptyMessage="You haven't registered for any upcoming events yet."
-          />
-        </TabsContent>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
+              Upcoming Events
+            </CardTitle>
+            <Calendar className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{upcomingEvents}</div>
+            <p className="text-xs text-muted-foreground">
+              Events you're registered for
+            </p>
+          </CardContent>
+        </Card>
 
-        <TabsContent value="ongoing">
-          <StudentEventsGrid
-            registrations={ongoingRegistrations}
-            title="Ongoing Events"
-            emptyMessage="You don't have any ongoing events."
-            showOngoingBadge={true}
-          />
-        </TabsContent>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
+              Ongoing Events
+            </CardTitle>
+            <Clock className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{ongoingEvents}</div>
+            <p className="text-xs text-muted-foreground">Currently happening</p>
+          </CardContent>
+        </Card>
 
-        <TabsContent value="past">
-          <StudentEventsGrid
-            registrations={pastRegistrations}
-            title="Past Events"
-            emptyMessage="You haven't attended any events yet."
-            showAttendanceStatus={true}
-          />
-        </TabsContent>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Attended</CardTitle>
+            <CheckCircle className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{attendedEvents}</div>
+            <p className="text-xs text-muted-foreground">Events you attended</p>
+          </CardContent>
+        </Card>
+      </div>
 
-        <TabsContent value="all">
-          <StudentEventsGrid
-            registrations={registrations}
-            title="All Registered Events"
-            emptyMessage="You haven't registered for any events yet."
-            showAttendanceStatus={true}
-          />
-        </TabsContent>
-      </Tabs>
+      <Suspense fallback={<div>Loading your registrations...</div>}>
+        <StudentEventsGrid userId={userId} />
+      </Suspense>
     </div>
   );
 }

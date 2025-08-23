@@ -403,7 +403,7 @@ export default function EnhancedChatbot() {
       {/* Enhanced Floating Button */}
       <motion.button
         onClick={() => setIsOpen(!isOpen)}
-        className="fixed bottom-6 right-6 bg-gradient-to-r from-primary-500 to-primary-600 text-white p-4 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 z-50 group"
+        className="fixed bottom-2 right-2 md:bottom-3 md:right-3  xl:bottom-6 xl:right-6 bg-gradient-to-r from-primary-500 to-primary-600 text-white p-4 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 z-50 group"
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
       >
@@ -426,7 +426,7 @@ export default function EnhancedChatbot() {
             initial={{ opacity: 0, y: 50, scale: 0.9 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 50, scale: 0.9 }}
-            className="fixed bottom-24 right-6 w-96 h-[600px] bg-background border border-border rounded-2xl shadow-2xl flex flex-col overflow-hidden z-40"
+            className="fixed bottom-14 md:bottom-20 xl:bottom-24 right-2 md:right-4 xl:right-6 w-96 h-[600px] bg-background border border-border rounded-2xl shadow-2xl flex flex-col overflow-hidden z-[100]"
           >
             {/* Enhanced Header */}
             <div className="bg-gradient-to-r from-primary-500 to-primary-600 text-primary-foreground px-6 py-4 flex items-center justify-between">
